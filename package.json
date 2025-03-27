@@ -22,7 +22,7 @@
         "vue": "^3.3.13"
     },
     "dependencies": {
-        "@heroicons/vue": "^1.0.6",
+        "lucide-vue-next": "^0.484.0",
         "nprogress": "^0.2.0",
         "vuedraggable": "^4.1.0",
         "xlsx": "^0.18.5"
