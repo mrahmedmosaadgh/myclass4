@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('subjects', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('nour_name')->nullable();
+            $table->string('nour_id')->nullable();
+            $table->text('description')->nullable();
+            $table->tinyInteger('active')->default(1);
+            $table->string('notes')->nullable();
+
+            $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
+            $table->softDeletes(); // Add this line for soft deletes
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('subjects');
+    }
+};
