@@ -1,9 +1,9 @@
 <template>
     <div class="w-full">
         <!-- Table Toolbar -->
-        <div v-if="showToolbar" class="mb-2 no_print flex scale-75  justify-between items-center">
+        <div v-if="showToolbar" class="mb-4 flex justify-between items-center">
             <!-- Left Side -->
-            <div class="flex items-center space-x-2 ">
+            <div class="flex items-center space-x-2">
                 <!-- Search -->
                 <div v-if="searchable" class="relative">
                     <input
@@ -17,7 +17,7 @@
 
 
 
-                <div class="flex items-center space-x-2 ">
+                <div class="flex items-center space-x-2">
                     <SecondaryButton
                         @click="printData"
                         class="flex items-center text-sm"
@@ -62,7 +62,7 @@
             </div>
 
             <!-- Right Side -->
-            <div class="flex items-center space-x-2 ">
+            <div class="flex items-center space-x-2">
                 <!-- Column Visibility Toggle -->
                 <div v-if="columnToggle" class="relative">
                     <button
@@ -94,7 +94,7 @@
                     <span class="text-sm text-gray-600">Show:</span>
                     <select
                         v-model="itemsPerPage"
-                        class="border rounded-lg px-6 py-1"
+                        class="border rounded-lg px-2 py-1"
                         @change="$emit('update:perPage', itemsPerPage)"
                     >
                         <option v-for="n in perPageOptions" :key="n" :value="n">{{ n }}</option>
@@ -187,12 +187,8 @@
                                     :class="getActionClass(action)"
                                     class="ml-2 first:ml-0"
                                 >
-        <LucideIcon
-            v-if="action.icon"
-            :name="action.icon"
-            class="w-4 h-4"
-            :class="action.class"
-        />
+        <HeroIcon v-if="action.icon" class="w-4 h-4"  :icon="action.icon" :class="action.class" :mini="true" outline />
+        <!-- <HeroIcon icon="pencil" :mini="false" outline /> -->
 
                                     <!-- <span v-if="action.icon" class="mr-1">{{ action.icon }}</span> -->
                                     {{ action.label }}
@@ -249,7 +245,6 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import LucideIcon from '@/Components/Common/LucideIcon.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { exportToExcel } from '@/Utils/exportHelper';
 
@@ -609,8 +604,7 @@ const handleSearch = () => {
 };
 
 const handleAction = (action, item) => {
-    console.log('action in datatablev2', action);
-    emit('action', { type: action.type, action: action, item });
+    emit('action', { type: action.type, item });
 };
 
 const shouldShowAction = (action, item) => {
@@ -651,9 +645,6 @@ watch(selected, (newVal) => {
     emit('selection-change', newVal);
 });
 </script>
-
-
-
 
 
 

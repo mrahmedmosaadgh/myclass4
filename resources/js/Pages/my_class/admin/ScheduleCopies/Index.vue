@@ -1,439 +1,309 @@
-<template>
-    <AppLayout :title="pageTitle">
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold">{{ pageTitle }}</h2>
-                        <div class="space-x-2">
-                            <PrimaryButton @click="openModal()">Create New Copy</PrimaryButton>
-                        </div>
-                    </div>
-
-                    <DataTableV2
-                        :items="items"
-                        :columns="tableColumns"
-                        :actions="tableActions"
-                        export-file-name="schedule_copies"
-                        export-sheet-name="Schedule Copies"
-                        :showToolbar="true"
-                        searchable
-                        sortable
-                        column-toggle
-                        :show-per-page="true"
-                        :bulk-actions="tableBulkActions"
-                        :print-settings="{
-                            title: 'Schedule Copies Report',
-                            showTimestamp: true,
-                            timestampFormat: 'long',
-                            orientation: 'landscape',
-                            paperSize: 'a4',
-                            fontSize: '12pt',
-                            headerBgColor: '#f8f9fa',
-                            borderColor: '#ddd',
-                            filename: 'schedule_copies_report',
-                            footerText: 'Generated from Schedule Management System',
-                            columnSettings: {
-                                'status': {
-                                    formatter: (value) => value.charAt(0).toUpperCase() + value.slice(1)
-                                },
-                                'active': {
-                                    formatter: (value) => value ? 'Yes' : 'No'
-                                },
-                                'copy_date': {
-                                    formatter: (value) => new Date(value).toLocaleDateString()
-                                }
-                            }
-                        }"
-                        @action="handleAction"
-                        @search="handleSearch"
-                        @sort="handleSort"
-                        @bulk-action="handleBulkAction"
-                        @page-change="handlePageChange"
-                    >
-                        <!-- Optional: Custom column templates -->
-                        <template #status="{ value }">
-                            <span :class="getStatusClass(value)">{{ value }}</span>
-                        </template>
-                    </DataTableV2>
-                </div>
-            </div>
-        </div>
-
-        <FormModal
-            :show="modalOpen"
-            :title="modelName"
-            :fields="formFields"
-            :editing="editing"
-            :form="form"
-            @close="closeModal"
-            @submitted="handleSubmit"
-        />
-    </AppLayout>
-</template>
-
 <script setup>
 import { ref, computed } from 'vue';
 import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import SecondaryButton from '@/Components/SecondaryButton.vue';
+import DataTable from './DataTable5.vue';
 import Pagination from '@/Components/Pagination.vue';
-import DataTableV2 from '@/Components/Common/DataTableV2.vue';
-import FormModal from '@/Components/Common/FormModal.vue';
+import FormModal from './FormModal5.vue';
+import NProgress from 'nprogress';
 
 const props = defineProps({
     records: Object,
-    options: Object,
+    options: Object
 });
 
-const pageTitle = 'Schedule Copies Management';
-const modelName = 'Schedule Copy';
-const baseUrl = '/admin/schedule-copies';
+// Add local reactive state for table data
+const tableData = ref({
+    data: props.records.data,
+    links: props.records.links
+});
 
-const modalOpen = ref(false);
+// Reactive state
+const showModal = ref(false);
 const editing = ref(null);
-const items = ref(props.records?.data || []);
-const pagination = ref(props.records?.links || null);
+const formErrors = ref({});
 const form = ref({
-    name: '',
     school_id: '',
-    status: '',
-    week_number: ''
+    name: '',
+    description: '',
+    active: true,
+    copy_date: null,
+    academic_year_id: '',
+    semester_id: '',
+    week_number: null,
+    status: 'draft',
+    metadata: null,
+    notes: ''
 });
 
+// Add these refs at the top with other refs
+const isSubmitting = ref(false);
+const isDeleting = ref(false);
+
+// Table configuration
 const tableColumns = [
-    {
-        key: 'name',
-        label: 'Name',
-        sortable: true
-    },
-    {
-        key: 'school.name',
-        label: 'School',
-        sortable: true
-    },
-    {
-        key: 'academic_year.name',
-        label: 'Academic Year'
-    },
-    {
-        key: 'semester.name',
-        label: 'Semester'
-    },
-    {
-        key: 'week_number',
-        label: 'Week',
-        sortable: true
-    },
-    {
-        key: 'copy_date',
-        label: 'Copy Date',
-        sortable: true
-    },
-    {
-        key: 'status',
-        label: 'Status',
-        template: true,
-        class: (value) => getStatusClass(value)
-    },
-    {
-        key: 'active',
-        label: 'Active',
-        formatter: (value) => value ? 'Yes' : 'No'
-    }
+    { key: 'name', label: 'Name' },
+    { key: 'school.name', label: 'School' },
+    { key: 'academic_year.name', label: 'Academic Year' },
+    { key: 'semester.name', label: 'Semester' },
+    { key: 'week_number', label: 'Week' },
+    { key: 'status', label: 'Status',
+      formatter: (value) => value.charAt(0).toUpperCase() + value.slice(1) },
+    { key: 'active', label: 'Active',
+      formatter: (value) => value ? 'Yes' : 'No' },
+    { key: 'copy_date', label: 'Copy Date',
+      formatter: (value) => value ? new Date(value).toLocaleDateString() : '-' }
 ];
 
 const tableActions = [
     {
-        type: 'create-schedule',
-        label: 'Create Schedule',
-        class: 'text-green-600 hover:text-green-900',
-        // Only show for pending copies
-        show: (item) => item.status === 'pending'
-    },
-    {
         type: 'edit',
         label: 'Edit',
-        class: 'text-indigo-600 hover:text-indigo-900'
+        icon: 'pencil',
+        class: 'text-blue-600 hover:text-blue-800'
     },
     {
         type: 'delete',
         label: 'Delete',
-        class: 'text-red-600 hover:text-red-900'
+        icon: 'trash',
+        class: 'text-red-600 hover:text-red-800'
     }
 ];
 
-const tableBulkActions = [
-    { value: 'delete', label: 'Delete Selected' },
-    { value: 'activate', label: 'Activate Selected' },
-    { value: 'deactivate', label: 'Deactivate Selected' }
+// Form fields configuration
+const formFields = [
+    {
+        name: 'school_id',
+        label: 'School',
+        type: 'select',
+        options: props.options.schools,
+        required: true
+    },
+    {
+        name: 'name',
+        label: 'Name',
+        type: 'text',
+        maxLength: 50,
+        required: true
+    },
+    {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea'
+    },
+    {
+        name: 'academic_year_id',
+        label: 'Academic Year',
+        type: 'select',
+        options: props.options.academicYears,
+        required: true
+    },
+    {
+        name: 'semester_id',
+        label: 'Semester',
+        type: 'select',
+        options: props.options.semesters
+    },
+    {
+        name: 'week_number',
+        label: 'Week Number',
+        type: 'number',
+        min: 1,
+        max: 52
+    },
+    {
+        name: 'copy_date',
+        label: 'Copy Date',
+        type: 'date'
+    },
+    {
+        name: 'status',
+        label: 'Status',
+        type: 'select',
+        options: props.options.statuses,
+        required: true
+    },
+    {
+        name: 'active',
+        label: 'Active',
+        type: 'checkbox'
+    },
+    {
+        name: 'notes',
+        label: 'Notes',
+        type: 'textarea'
+    }
 ];
 
-const getStatusClass = (status) => {
-    const classes = {
-        pending: 'text-yellow-600',
-        active: 'text-green-600',
-        inactive: 'text-red-600'
-    };
-    return classes[status] || '';
-};
+const modalTitle = computed(() =>
+    editing.value ? 'Edit Schedule Copy' : 'Create Schedule Copy'
+);
 
-const formFields = computed(() => {
-    // Get the first school's ID if schools exist
-    const defaultSchoolId = props.options?.schools?.[0]?.id || '';
-
-    return [
-        {
-            name: 'name',
-            label: 'Name',
-            type: 'text',
-            default: generateTimestampName(),
-            required: true
-        },
-        {
-            name: 'school_id',
-            label: 'School',
-            type: 'select',
-            default: defaultSchoolId, // Set the first school as default
-            required: true,
-            options: props.options?.schools?.map(school => ({
-                value: school.id,
-                label: school.name
-            })) || []
-        },
-        {
-            name: 'week_number',
-            label: 'Week Number',
-            type: 'number',
-            default: '',
-            min: 1,
-            max: 52
-        },
-        {
-            name: 'status',
-            label: 'Status',
-            type: 'select',
-            default: 'draft',
-            required: true,
-            options: [
-                { value: 'draft', label: 'draft' },
-                { value: 'pending', label: 'Pending' },
-                { value: 'active', label: 'Active' },
-                { value: 'inactive', label: 'Inactive' }
-            ]
-        }
-    ];
-});
-
-const generateTimestampName = () => {
-    const now = new Date();
-
-    // Format: "copy_24-Mar-2025_03:45"
-    const date = now.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-    }).replace(/ /g, '-');
-
-    const time = now.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-    });
-
-    return `copy_${date}_${time}`;
-};
-
+// Methods
 const openModal = (record = null) => {
     editing.value = record;
-    if (record) {
-        form.value = { ...record };
-    } else {
-        // Initialize form with default values from formFields
-        form.value = formFields.value.reduce((acc, field) => {
-            acc[field.name] = field.default || '';
-            return acc;
-        }, {});
-    }
-    modalOpen.value = true;
+    form.value = record
+        ? { ...record }
+        : {
+            school_id: '',
+            name: '',
+            description: '',
+            active: true,
+            copy_date: null,
+            academic_year_id: '',
+            semester_id: '',
+            week_number: null,
+            status: 'draft',
+            metadata: null,
+            notes: ''
+        };
+    showModal.value = true;
 };
 
 const closeModal = () => {
-    modalOpen.value = false;
+    showModal.value = false;
     editing.value = null;
-    form.value = formFields.value.reduce((acc, field) => {
-        acc[field.name] = field.default || '';
-        return acc;
-    }, {});
+    formErrors.value = {};
 };
 
-const handleSubmit = (formData) => {
-    // Extract the actual form data from the nested structure
-    const data = formData.form || formData;
+const handleSubmit = (event) => {
+    isSubmitting.value = true;
+    NProgress.start();
 
     if (editing.value) {
-        axios.post(`${baseUrl}/${editing.value.id}`, {
-            _method: 'PUT',
-            ...data
+        // Change PUT to POST and add _method: 'PUT'
+        axios.post(`/admin/schedule-copies/${editing.value.id}`, {
+            ...event.form,
+            _method: 'PUT'
         })
-        .then(() => {
-            closeModal();
-            refreshData();
-        })
-        .catch(error => {
-            let errorMessage = 'An error occurred while saving the record.';
-
-            if (error.response?.data?.errors) {
-                const firstError = Object.values(error.response.data.errors)[0];
-                errorMessage = firstError[0] || errorMessage;
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            }
-
-            alert(errorMessage);
-        });
+            .then((response) => {
+                const index = tableData.value.data.findIndex(item => item.id === editing.value.id);
+                if (index !== -1) {
+                    tableData.value.data[index] = response.data.record;
+                }
+                closeModal();
+            })
+            .catch(error => {
+                formErrors.value = error.response?.data?.errors || {};
+            })
+            .finally(() => {
+                isSubmitting.value = false;
+                NProgress.done();
+            });
     } else {
-        axios.post(baseUrl, data)
-        .then(() => {
-            closeModal();
-            refreshData();
-        })
-        .catch(error => {
-            let errorMessage = 'An error occurred while saving the record.';
-
-            if (error.response?.data?.errors) {
-                const firstError = Object.values(error.response.data.errors)[0];
-                errorMessage = firstError[0] || errorMessage;
-            } else if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            }
-
-            alert(errorMessage);
-        });
+        axios.post('/admin/schedule-copies', event.form)
+            .then((response) => {
+                tableData.value.data.unshift(response.data.record);
+                closeModal();
+            })
+            .catch(error => {
+                formErrors.value = error.response?.data?.errors || {};
+            })
+            .finally(() => {
+                isSubmitting.value = false;
+                NProgress.done();
+            });
     }
 };
 
-const deleteRecord = (record) => {
-    if (!confirm('Are you sure you want to delete this record?')) return;
+const handleDelete = (record) => {
+    if (confirm('Are you sure you want to delete this schedule copy?')) {
+        isDeleting.value = true;
+        NProgress.start();
 
-    axios.delete(`${baseUrl}/${record.id}`)
-        .then(() => {
-            refreshData();
+        axios.post(`/admin/schedule-copies/${record.id}`, {
+            _method: 'DELETE'
         })
-        .catch(error => {
-            let errorMessage = 'An error occurred while deleting the record.';
-
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            }
-
-            alert(errorMessage);
-        });
+            .then(() => {
+                tableData.value.data = tableData.value.data.filter(item => item.id !== record.id);
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                alert('Failed to delete schedule copy');
+            })
+            .finally(() => {
+                isDeleting.value = false;
+                NProgress.done();
+            });
+    }
 };
 
-const refreshData = () => {
-    axios.get(baseUrl)
-        .then(response => {
-            if (response.data.records) {
-                items.value = response.data.records.data;
-                pagination.value = response.data.records.links;
-            }
-        })
-        .catch(error => {
-            console.error('Error refreshing data:', error);
-            alert('An error occurred while refreshing the data.');
-        });
-};
-
-const handleSearch = (query) => {
-    // Implement search logic
-};
-
-const handleSort = ({ key, order }) => {
-    // Implement sort logic
-};
-
-const handleBulkAction = ({ action, selected }) => {
-    // Implement bulk action logic
-};
-
-const handlePageChange = (page) => {
-    // Implement pagination logic
-};
-
-const handleAction = ({ type, item }) => {
+const handleTableAction = ({ type, item }) => {
     switch (type) {
         case 'edit':
             openModal(item);
             break;
         case 'delete':
-            deleteRecord(item);
-            break;
-        case 'create-schedule':
-            handleCreateSchedule(item);
+            handleDelete(item);
             break;
         default:
             console.warn(`Unhandled action type: ${type}`);
     }
 };
 
-const handleCreateSchedule = async (item) => {
-    try {
-        // First step: Check changes
-        const checkResponse = await axios.get(`${baseUrl}/${item.id}/check-schedule-changes`);
-        const changes = checkResponse.data.changes;
+// Add refreshData function to reload the data
+const refreshData = () => {
+    NProgress.start();
 
-        // Show changes to user and ask for confirmation
-        const message = `
-            Changes to be made:
-            - ${changes.to_delete.count} schedules will be deleted
-            - ${changes.to_create.count} new schedules will be created
-            - ${changes.unchanged} schedules will remain unchanged
-
-            Do you want to proceed?
-        `;
-
-        if (confirm(message)) {
-            // Second step: Execute changes
-            const executeResponse = await axios.post(`${baseUrl}/${item.id}/execute-schedule-changes`);
-            alert(executeResponse.data.message);
-            refreshData();
-        }
-    } catch (error) {
-        let errorMessage = 'An error occurred while processing the schedules.';
-        if (error.response?.data?.message) {
-            errorMessage = error.response.data.message;
-        }
-        alert(errorMessage);
-    }
+    axios.get('/admin/schedule-copies')
+        .then(response => {
+            if (response.data.records) {
+                tableData.value = {
+                    data: response.data.records.data,
+                    links: response.data.records.links
+                };
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing data:', error);
+            alert('Failed to refresh data');
+        })
+        .finally(() => {
+            NProgress.done();
+        });
 };
 </script>
 
+<template>
+    <AppLayout title="Schedule Copies">
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Schedule Copies</h2>
+                        <PrimaryButton @click="openModal()">
+                            Create New Copy
+                        </PrimaryButton>
+                    </div>
 
+                    <DataTable
+                        :items="tableData.data"
+                        :columns="tableColumns"
+                        :actions="tableActions"
+                        :loading="isDeleting"
+                        @action="handleTableAction"
+                    />
 
+                    <div v-if="tableData.links" class="mt-4">
+                        <Pagination :links="tableData.links" />
+                    </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    <FormModal
+                        :show="showModal"
+                        :title="modalTitle"
+                        :fields="formFields"
+                        :form="form"
+                        :errors="formErrors"
+                        :loading="isSubmitting"
+                        @close="closeModal"
+                        @submit="handleSubmit"
+                    />
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+</template>
 
 
 

@@ -15,4 +15,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 Route::post('/upload-image', [ImageUploadController::class, 'store'])
     ->middleware(['auth:sanctum']);
 
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return response()->json([
+        'user' => [
+            'id' => $request->user()->id,
+            'name' => $request->user()->name,
+            'user_role' => $request->user()->role,
+            'email' => $request->user()->email,
+            'roles' => $request->user()->getRoleNames(),
+            'school' => app(HandleInertiaRequests::class)->getUserSchool($request->user()),
+            'classroom' => app(HandleInertiaRequests::class)->getUserClassroom($request->user()),
+        ]
+    ]);
+});
 

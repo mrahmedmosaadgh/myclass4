@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ScheduleCopy extends Model
 {
@@ -50,15 +50,13 @@ class ScheduleCopy extends Model
         return $this->belongsTo(Semester::class);
     }
 
-    public function createdBy()
+    public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function lastModifiedBy()
+    public function modifier()
     {
         return $this->belongsTo(User::class, 'last_modified_by');
     }
 }
-
-

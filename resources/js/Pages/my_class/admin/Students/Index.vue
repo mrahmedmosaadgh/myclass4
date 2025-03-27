@@ -68,13 +68,136 @@
 
         <FormModal
             :show="showModal"
+            :editing="editingData"
             :fields="formFields"
-            :title="modalTitle"
-            :errors="formErrors"
-            :submitting="submitting"
+            title="Student"
             @close="closeModal"
-            @submitted="submitForm"
-        />
+            @submitted="handleSubmit"
+        >
+            <template #default>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Name Fields -->
+                    <div>
+                        <InputLabel for="name" value="Name" required />
+                        <TextInput
+                            id="name"
+                            v-model="form.name"
+                            type="text"
+                            class="mt-1 block w-full"
+                            :error="formErrors.name"
+                        />
+                        <InputError :message="formErrors.name" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="name_ar" value="Arabic Name" />
+                        <TextInput
+                            id="name_ar"
+                            v-model="form.name_ar"
+                            type="text"
+                            class="mt-1 block w-full"
+                            :error="formErrors.name_ar"
+                        />
+                        <InputError :message="formErrors.name_ar" class="mt-1" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="name_cute" value="Nickname" />
+                        <TextInput
+                            id="name_cute"
+                            v-model="form.name_cute"
+                            type="text"
+                            class="mt-1 block w-full"
+                            :error="formErrors.name_cute"
+                        />
+                        <InputError :message="formErrors.name_cute" class="mt-1" />
+                    </div>
+
+                    <!-- School Selection -->
+                    <div>
+                        <InputLabel for="school_id" value="School" required />
+                        <select
+                            id="school_id"
+                            v-model="form.school_id"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            :class="{ 'border-red-500': formErrors.school_id }"
+                        >
+                            <option value="">Select School</option>
+                            <option v-for="school in localSchools" :key="school.id" :value="school.id">
+                                {{ school.name }}
+                            </option>
+                        </select>
+                        <InputError :message="formErrors.school_id" class="mt-1" />
+                    </div>
+
+                    <!-- Stage Selection -->
+                    <div>
+                        <InputLabel for="stage_id" value="Stage" required />
+                        <select
+                            id="stage_id"
+                            v-model="form.stage_id"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            :class="{ 'border-red-500': formErrors.stage_id }"
+                        >
+                            <option value="">Select Stage</option>
+                            <option v-for="stage in stages" :key="stage.id" :value="stage.id">
+                                {{ stage.name }}
+                            </option>
+                        </select>
+                        <InputError :message="formErrors.stage_id" class="mt-1" />
+                    </div>
+
+                    <!-- Grade Selection -->
+                    <div>
+                        <InputLabel for="grade_id" value="Grade" required />
+                        <select
+                            id="grade_id"
+                            v-model="form.grade_id"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            :class="{ 'border-red-500': formErrors.grade_id }"
+                            :disabled="!form.stage_id"
+                        >
+                            <option value="">Select Grade</option>
+                            <option v-for="grade in grades" :key="grade.id" :value="grade.id">
+                                {{ grade.name }}
+                            </option>
+                        </select>
+                        <InputError :message="formErrors.grade_id" class="mt-1" />
+                    </div>
+
+                    <!-- Classroom Selection -->
+                    <div>
+                        <InputLabel for="classroom_id" value="Classroom" required />
+                        <select
+                            id="classroom_id"
+                            v-model="form.classroom_id"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            :class="{ 'border-red-500': formErrors.classroom_id }"
+                            :disabled="!form.grade_id"
+                        >
+                            <option value="">Select Classroom</option>
+                            <option v-for="classroom in classrooms" :key="classroom.id" :value="classroom.id">
+                                {{ classroom.name }}
+                            </option>
+                        </select>
+                        <InputError :message="formErrors.classroom_id" class="mt-1" />
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="col-span-full">
+                        <InputLabel for="notes" value="Notes" />
+                        <textarea
+                            id="notes"
+                            v-model="form.notes"
+                            rows="3"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            :class="{ 'border-red-500': formErrors.notes }"
+                        ></textarea>
+                        <InputError :message="formErrors.notes" class="mt-1" />
+                    </div>
+                </div>
+            </template>
+        </FormModal>
     </AppLayout>
 </template>
 
@@ -85,15 +208,18 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import Pagination from '@/Components/Pagination.vue';
-import DataTable from '@/Components/Common/DataTable.vue';
-import FormModal from '@/Components/Common/FormModal.vue';
-import ImportExcel from '@/Components/Common/ImportExcel.vue';
+import DataTable from './Common/DataTable.vue';
+import FormModal from './Common/FormModal.vue';
+import ImportExcel from './Common/ImportExcel.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
+import InputError from '@/Components/InputError.vue';
 import * as XLSX from 'xlsx';
 import StudentFilters from '@/Components/Students/StudentFilters.vue';
-import ColumnManager from '@/Components/Common/ColumnManager.vue';
+import ColumnManager from './Common/ColumnManager.vue';
 import { exportData } from '@/Utils/exportHelper';
+import { toast } from 'vue3-toastify';
+import { handleAxiosError } from '@/Utils/errorHandler';
 
 const formErrors = ref({});
 const submitting = ref(false);
@@ -146,7 +272,7 @@ const props = defineProps({
 
 const baseUrl = '/admin/students';
 const showModal = ref(false);
-const editingId = ref(null);
+const editingData = ref(null);
 const form = ref({
     name: '',
     name_ar: '',
@@ -176,7 +302,7 @@ const localPermissions = ref(props.permissions);
 const items = ref([]);
 const pagination = ref(null);
 
-const modalTitle = computed(() => editingId.value ? 'Edit Student' : 'Add New Student');
+const modalTitle = computed(() => editingData.value ? 'Edit Student' : 'Add New Student');
 const first = ()=>{
              selectedSchool.value   =1
              selectedStage.value    =1
@@ -206,15 +332,9 @@ const openModal = (item = null) => {
     }
 
     if (item) {
-        editingId.value = item.id;
-        form.value = {
-            ...item,
-            school_id: selectedSchool.value,
-            stage_id: selectedStage.value || item.stage_id,
-            grade_id: selectedGrade.value || item.grade_id
-        };
+        editingData.value = { ...item };  // Make a copy of the item
     } else {
-        editingId.value = null;
+        editingData.value = null;
         form.value = {
             name: '',
             name_ar: '',
@@ -231,63 +351,94 @@ const openModal = (item = null) => {
 
 const closeModal = () => {
     showModal.value = false;
-    editingId.value = null;
+    editingData.value = null;
     formErrors.value = {}; // Reset errors when closing modal
 };
 
-const submitForm = (formData1) => {
-
-var formData = formData1.form;
+const submitForm = async (formData1) => {
     if (submitting.value) return;
 
+    const formData = formData1.form;
     submitting.value = true;
     formErrors.value = {};
 
-    const url = editingId.value ? `${baseUrl}/${editingId.value}` : baseUrl;
+    const url = editingData.value ? `${baseUrl}/${editingData.value.id}` : baseUrl;
 
-    // Include all required fields in the request
     const requestData = {
-        ...(editingId.value && { _method: 'PUT' }),
-        name: formData.name,
-        name_ar: formData.name_ar,
-        name_cute: formData.name_cute,
-        notes: formData.notes,
+        ...(editingData.value && { _method: 'PUT' }),
+        name: formData.name?.trim(),
+        name_ar: formData.name_ar?.trim(),
+        name_cute: formData.name_cute?.trim(),
+        notes: formData.notes?.trim(),
         school_id: selectedSchool.value,
         stage_id: selectedStage.value,
         grade_id: selectedGrade.value,
         classroom_id: selectedClassroom.value,
-        // Add any other required fields from your validation rules
     };
 
-    axios.post(url, requestData)
-        .then(response => {
-            if (response.data.records) {
-                localRecords.value = response.data.records;
-                closeModal();
-                return { success: true };
+    // Validate required fields
+    const requiredFields = {
+        name: 'Name',
+        school_id: 'School',
+        stage_id: 'Stage',
+        grade_id: 'Grade',
+        classroom_id: 'Classroom'
+    };
+
+    const missingFields = Object.entries(requiredFields)
+        .filter(([key]) => !requestData[key])
+        .map(([, label]) => label);
+
+    if (missingFields.length > 0) {
+        formErrors.value = {
+            error: [`Please fill in the following required fields: ${missingFields.join(', ')}`]
+        };
+        submitting.value = false;
+        toast.error('Please fill in all required fields');
+        return;
+    }
+
+    try {
+        const response = await axios.post(url, requestData);
+
+        if (response.data.records) {
+            localRecords.value = response.data.records;
+            closeModal();
+            toast.success(editingData.value ? 'Student updated successfully' : 'Student created successfully');
+            return { success: true };
+        }
+    } catch (error) {
+        handleAxiosError(error, formErrors, {
+            logToConsole: true,
+            showToast: true,
+            customMessages: {
+                422: 'Please check the form for errors',
+                404: 'Student not found',
+                403: 'You do not have permission to perform this action',
+                default: 'Failed to save student'
             }
-        })
-        .catch(error => {
-            if (error.response?.data?.errors) {
-                formErrors.value = error.response.data.errors;
-            } else {
-                console.error('Submission error:', error);
-                alert('An error occurred while saving the record.');
-            }
-        })
-        .finally(() => {
-            submitting.value = false;
         });
+    } finally {
+        submitting.value = false;
+    }
 };
 
 const deleteRecord = async (item) => {
-    if (confirm('Are you sure you want to delete this student?')) {
-        try {
-            const response = await axios.delete(`${baseUrl}/${item.id}`);
-            localRecords.value = response.data.records;
-        } catch (error) {
-            console.error('Error deleting record:', error);
-        }
+    if (!confirm('Are you sure you want to delete this student?')) return;
+
+    try {
+        const response = await axios.delete(`${baseUrl}/${item.id}`);
+        localRecords.value = response.data.records;
+        toast.success('Student deleted successfully');
+    } catch (error) {
+        handleAxiosError(error, null, {
+            showToast: true,
+            customMessages: {
+                404: 'Student not found',
+                403: 'You do not have permission to delete this student',
+                default: 'Failed to delete student'
+            }
+        });
     }
 };
 
@@ -479,46 +630,6 @@ onMounted(() => {
     }
 });
 </script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

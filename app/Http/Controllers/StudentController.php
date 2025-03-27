@@ -80,33 +80,32 @@ class StudentController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required',
-            'name_ar' => 'nullable',
-            'name_cute' => 'nullable',
-            'order_1' => 'nullable',
-            'order_2' => 'nullable',
-            'notes' => 'nullable',
-            'parent_id' => 'nullable|exists:student_parents,id',
-            'school_section_id' => 'nullable|exists:school_sections,id',
-            'school_id' => 'required|exists:schools,id',
-            'stage_id' => 'required|exists:stages,id',
-            'grade_id' => 'required|exists:grades,id',
-            'classroom_id' => 'required|exists:classrooms,id',
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'name_ar' => 'nullable|string|max:255',
+                'name_cute' => 'nullable|string|max:255',
+                'notes' => 'nullable|string',
+                'school_id' => 'required|exists:schools,id',
+                'stage_id' => 'required|exists:stages,id',
+                'grade_id' => 'required|exists:grades,id',
+                'classroom_id' => 'required|exists:classrooms,id',
+            ]);
 
-        $validated['user_id'] = Auth::id();
+            $student = Student::create($validated);
 
-        Student::create($validated);
+            return response()->json([
+                'message' => 'Student created successfully',
+                'records' => Student::all() // Or use your pagination/filtering logic
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Student creation failed: ' . $e->getMessage());
 
-        $records = Student::with(['school', 'stage', 'grade', 'classroom', 'parent'])
-            ->orderBy('name')
-            ->paginate(40);
-
-        return response()->json([
-            'message' => 'Student created successfully',
-            'records' => $records
-        ]);
+            return response()->json([
+                'message' => 'Failed to create student',
+                'errors' => ['error' => [$e->getMessage()]]
+            ], 500);
+        }
     }
 
     public function update(Request $request, Student $student)
@@ -410,6 +409,7 @@ class StudentController extends Controller
         }
     }
 }
+
 
 
 

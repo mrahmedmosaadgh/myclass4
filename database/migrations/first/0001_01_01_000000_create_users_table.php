@@ -30,7 +30,7 @@ return new class extends Migration
             $table->timestamp('last_active')->nullable();
             $table->boolean('is_active')->default(false);
             $table->timestamps();
-            // $table->softDeletes(); // Adds a 'deleted_at' column
+             $table->softDeletes(); // Adds a 'deleted_at' column
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

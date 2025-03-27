@@ -44,55 +44,6 @@ class Student extends Model
         'school_name'
     ];
 
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($student) {
-            // Generate a unique s_id if not provided
-            if (empty($student->s_id)) {
-                do {
-                    $uniqueId = 'p' . strtolower(Str::random(4, 'abcdefghijklmnopqrstuvwxyz')) . rand(1000, 9999);
-                } while (self::where('s_id', $uniqueId)->exists());
-
-                $student->s_id = $uniqueId;
-            }
-
-
-
-
-
-
-
-            // Check if a user with the given email already exists
-            $user = User::where('email', $student->s_id)->first();
-            // $user = User::where('email', $student->email)->first();
-
-            if (!$user) {
-                // Create a new user if not exists
-                $user = User::create([
-                    'name' => $student->name,
-                    'email' => $student->s_id,
-                    'role' =>  'parent' ,
-
-                    // 'email' => $student->email,
-                    // 'password' => bcrypt(Str::random(10)), // Generate a random password
-                    'password' => bcrypt('12345678'), // Generate a random password
-                ]);
-            }
-
-            $student->user_id = $user->id;
-        });
-    }
-
-
-
-
-
-
-
-
     // Define all relationships
     public function school()
     {
@@ -147,9 +98,6 @@ class Student extends Model
     {
         return $this->parent ? $this->parent->name : null;
     }
-
-
-
 }
 
 
