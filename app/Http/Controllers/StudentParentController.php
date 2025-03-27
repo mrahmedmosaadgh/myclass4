@@ -17,7 +17,7 @@ class StudentParentController extends Controller
         $parents = StudentParent::with('school')
             ->paginate(10);
 
-        return Inertia::render('StudentParents/Index', [
+        return Inertia::render('my_class/admin/StudentParents/Index', [
             'records' => $parents,
             'schools' => \App\Models\School::select('id', 'name')->get()
         ]);

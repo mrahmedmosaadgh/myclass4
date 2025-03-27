@@ -19,9 +19,9 @@ class ClassroomSubjectTeacherController extends Controller
     public function index()
     {
         $records = ClassroomSubjectTeacher::with(['school', 'grade', 'classroom', 'subject', 'teacher'])
-            ->paginate(10);
+            ->paginate(40);
 
-        return Inertia::render('ClassroomSubjectTeachers/Index', [
+        return Inertia::render('my_class/admin/ClassroomSubjectTeachers/Index', [
             'records' => $records,
             'options' => [
                 'schools' => School::select('id', 'name')->get(),

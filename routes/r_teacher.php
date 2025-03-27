@@ -12,7 +12,13 @@ Route::middleware(['auth', 'role:teacher'])->prefix('teacher')->name('teacher.')
     Route::get('/classes', [TeacherController::class, 'classes'])->name('classes');
     Route::get('/attendance', [TeacherController::class, 'attendance'])->name('attendance');
     Route::get('/grades', [TeacherController::class, 'grades'])->name('grades');
+    Route::post('/students', [TeacherController::class, 'students'])->name('students');
 });
+
+Route::middleware(['auth', 'role:teacher'])->prefix('api/teacher')->name('teacher.')->group(function () {
+        Route::post('/students', [TeacherController::class, 'students'])->name('students');
+});
+
 
 // Student routes
 Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')->group(function () {

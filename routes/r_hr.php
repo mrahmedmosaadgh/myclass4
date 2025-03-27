@@ -49,6 +49,12 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Route::resource('curriculum-map', CurriculumMapController::class);
     // Route::resource('question-bank', QuestionBankController::class);
     // Classroom Routes
+
+    // createSchedule
+    Route::get('/schedule-copies/{id}/check-schedule-changes', [ScheduleCopyController::class, 'checkScheduleChanges']);
+Route::post('/schedule-copies/{id}/execute-schedule-changes', [ScheduleCopyController::class, 'executeScheduleChanges']);
+
+
     Route::get('classroom/export', [ClassroomController::class, 'export'])
         ->name('classroom.export');
         Route::post('classroom/import', [ClassroomController::class, 'import'])
@@ -142,10 +148,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::post('calendar/import', [CalendarController::class, 'import'])
         ->name('calendar.import');
 
-
-
-
+    Route::post('academic-year/{academicYear}/generate-calendar', [AcademicYearController::class, 'generateCalendar'])
+        ->name('academic-year.generate-calendar');
 });
+
 
 
 

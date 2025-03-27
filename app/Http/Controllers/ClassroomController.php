@@ -15,13 +15,13 @@ class ClassroomController extends Controller
     public function index()
     {
         $classrooms = Classroom::with(['school', 'stage', 'grade'])
-            ->paginate(10);
+            ->paginate(40);
 
         $schools = School::select('id', 'name')->get();
         $stages = Stage::select('id', 'name')->get();
         $grades = Grade::select('id', 'name')->get();
 
-        return Inertia::render('Classrooms/Index', [
+        return Inertia::render('my_class/admin/Classrooms/Index', [
             'records' => $classrooms,
             'schools' => $schools,
             'stages' => $stages,

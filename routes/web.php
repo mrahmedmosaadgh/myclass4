@@ -38,3 +38,5 @@ Route::middleware([
 include dirname(__DIR__) . '/routes/admin.php';
 include dirname(__DIR__) . '/routes/r_hr.php';
 include dirname(__DIR__) . '/routes/r_teacher.php';
+include dirname(__DIR__) . '/routes/r_student.php';
+

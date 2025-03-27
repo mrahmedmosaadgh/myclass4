@@ -69,33 +69,34 @@ const maxWidthClass = computed(() => {
 </script>
 
 <template>
-    <dialog class="z-50 m-0 min-h-full min-w-full overflow-y-auto bg-transparent backdrop:bg-transparent" ref="dialog">
-        <div class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50" scroll-region>
-            <transition
-                enter-active-class="ease-out duration-300"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="ease-in duration-200"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
-                <div v-show="show" class="fixed inset-0 transform transition-all" @click="close">
-                    <div class="absolute inset-0 bg-gray-500 opacity-75" />
+    <div v-if="showSlot">
+        <dialog
+            ref="dialog"
+            class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50"
+            :class="maxWidthClass"
+        >
+            <div class="modal-content bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:w-full sm:mx-auto">
+                <div class="modal-body">
+                    <slot />
                 </div>
-            </transition>
-
-            <transition
-                enter-active-class="ease-out duration-300"
-                enter-from-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enter-to-class="opacity-100 translate-y-0 sm:scale-100"
-                leave-active-class="ease-in duration-200"
-                leave-from-class="opacity-100 translate-y-0 sm:scale-100"
-                leave-to-class="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            >
-                <div v-show="show" class="mb-6 bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:w-full sm:mx-auto" :class="maxWidthClass">
-                    <slot v-if="showSlot"/>
-                </div>
-            </transition>
-        </div>
-    </dialog>
+            </div>
+        </dialog>
+    </div>
 </template>
+
+<style scoped>
+.modal-content {
+    max-height: 90vh;
+    margin: 2rem auto;
+}
+
+.modal-body {
+    overflow-y: auto;
+    max-height: calc(90vh - 4rem); /* Account for margin */
+}
+
+dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+</style>
+

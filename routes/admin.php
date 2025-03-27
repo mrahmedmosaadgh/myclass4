@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\DocumentationController;
 use App\Http\Controllers\PermissionsController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,20 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->group(fu
 
             // Add the missing route for updating user roles
     Route::put('/users/{user}/roles', [UserController::class, 'updateRoles'])->name('admin.users.roles.update');
+
+    Route::resource('documentation', DocumentationController::class);
+    // Route::resource('documentation', DocumentationController::class);
+    // Route::resource('documentation', DocumentationController::class)
+    //      ->names([
+    //          'index' => 'documentation.index',
+    //          'create' => 'documentation.create',
+    //          'store' => 'documentation.store',
+    //          'show' => 'documentation.show',
+    //          'edit' => 'documentation.edit',
+    //          'update' => 'documentation.update',
+    //          'destroy' => 'documentation.destroy',
+    //      ]);
+
 });
 
 

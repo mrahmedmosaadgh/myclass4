@@ -14,7 +14,7 @@ class StageController extends Controller
         $stages = Stage::with('school')->paginate(10);
         $schools = School::select('id', 'name')->get();
 
-        return Inertia::render('Stages/Index', [
+        return Inertia::render('my_class/admin/Stages/Index', [
             'records' => $stages,
             'schools' => $schools
         ]);

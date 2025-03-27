@@ -14,7 +14,7 @@ class SchoolSectionController extends Controller
         $sections = SchoolSection::with('school')->paginate(10);
         $schools = School::select('id', 'name')->get();
 
-        return Inertia::render('SchoolSections/Index', [
+        return Inertia::render('my_class/admin/SchoolSections/Index', [
             'sections' => $sections,
             'schools' => $schools
         ]);

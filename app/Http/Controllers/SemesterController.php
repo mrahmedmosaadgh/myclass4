@@ -13,9 +13,9 @@ class SemesterController extends Controller
     public function index()
     {
         $semesters = Semester::with(['school', 'academicYear'])
-            ->paginate(10);
-        
-        return Inertia::render('Semesters/Index', [
+            ->paginate(40);
+
+        return Inertia::render('my_class/admin/Semesters/Index', [
             'records' => $semesters,
             'options' => [
                 'schools' => School::select('id', 'name')->get(),

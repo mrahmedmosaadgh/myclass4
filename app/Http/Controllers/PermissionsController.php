@@ -15,7 +15,7 @@ class PermissionsController extends Controller
     {
         $users = User::with('roles')->where('id', '!=', auth()->id())->get();
 
-        return Inertia::render('Admin/PermissionsDashboard', [
+        return Inertia::render('my_class/super_admin/Admin/PermissionsDashboard', [
             'roles' => Role::with('permissions')
                 ->where('name', '!=', 'super_admin')
                 ->get(),

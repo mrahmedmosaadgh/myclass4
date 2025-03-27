@@ -29,9 +29,9 @@ class ScheduleCopy extends Model
 
     protected $casts = [
         'active' => 'boolean',
+        'metadata' => 'array',
         'copy_date' => 'date',
         'activated_at' => 'datetime',
-        'metadata' => 'array'
     ];
 
     // Relationships

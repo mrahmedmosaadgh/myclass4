@@ -17,22 +17,58 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
 use App\Models\ClassroomSubjectTeacher;
 use App\Models\Student;
+use Illuminate\Support\Facades\Auth;
 
 class TeacherController extends Controller
 {
     public function index()
+    {
+        return 'okk';
+        $teachers = Teacher::with(['school', 'user'])
+            ->orderBy('name')
+            ->paginate(10);
+
+        $schools = School::select('id', 'name')->get();
+// resources/js/Pages/my_class/admin/Teacher/TeacherHome.vue
+        return Inertia::render('my_class/admin/Teacher/TeacherHome', [
+            'records' => $teachers,
+            'schools' => $schools,
+        ]);
+    }
+
+    public function home()
     {
         $teachers = Teacher::with(['school', 'user'])
             ->orderBy('name')
             ->paginate(10);
 
         $schools = School::select('id', 'name')->get();
+        $teacher = Auth::user();
+        $teacher = Teacher::where('user_id', $teacher->id)->first();
 
-        return Inertia::render('Teachers/Index', [
+        $assignments = ClassroomSubjectTeacher::where('teacher_id', $teacher->id)
+            ->with(['classroom', 'subject'])
+            ->get();
+
+
+        $classrooms = array() ;
+        $subjects = array() ;
+        foreach ($assignments as $key => $value) {
+            array_push($classrooms, $value->classroom);
+            array_push($subjects, $value->subject);
+        }
+
+
+        return Inertia::render('Teacher/TeacherHome', [
             'records' => $teachers,
             'schools' => $schools,
+            'assignments' => $assignments,
+            'classrooms' => $classrooms,
+            'subjects' => $subjects,
         ]);
     }
+
+
 
     public function store(Request $request)
     {
@@ -360,7 +396,10 @@ class TeacherController extends Controller
 
     public function getTeacherClasses()
     {
-        $teacher = auth()->user();
+        $teacher = Teacher::where('user_id', auth()->id())->first();
+        if (!$teacher) {
+            return response()->json(['error' => 'No teacher record found for this user'], 403);
+        }
 
         $assignments = ClassroomSubjectTeacher::where('teacher_id', $teacher->id)
             ->with(['classroom', 'subject'])
@@ -397,9 +436,23 @@ class TeacherController extends Controller
         ]);
     }
 
-    public function home()
+    public function students(Request $request)
     {
-        return Inertia::render('Teacher/TeacherHome');
+        $students = Student::where('classroom_id', $request->classroom_id)
+            ->with([
+                'user',
+                'school:id,name',  // Note the :id,name to select specific fields
+                'stage:id,name',
+                'grade:id,name',
+                'classroom:id,name',
+                'parent:id,name'
+            ])
+            ->select('id', 's_id', 'user_id', 'name', 'name_ar', 'grade_id', 'school_id','classroom_id','stage_id') // Make sure to include school_id
+            ->get();
+
+        return response()->json([
+            'students' => $students
+        ]);
     }
 
     public function classes()
@@ -417,5 +470,8 @@ class TeacherController extends Controller
         return Inertia::render('Teacher/Grades');
     }
 }
+
+
+
 
 

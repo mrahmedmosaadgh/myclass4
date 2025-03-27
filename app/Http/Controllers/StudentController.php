@@ -55,7 +55,7 @@ class StudentController extends Controller
             ->orderBy('name')
             ->paginate(40);
 
-        return Inertia::render('Students/Index', [
+        return Inertia::render('my_class/admin/Students/Index', [
             'records' => $students,
             'schools' => $accessData['schools'] ?? [], // Ensure schools is always an array
             'userRoles' => $accessData['userRoles'] ?? [],
@@ -322,7 +322,7 @@ class StudentController extends Controller
         }
     }
 
-    
+
 
     public function undoImport($importId)
     {

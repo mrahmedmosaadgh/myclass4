@@ -19,7 +19,7 @@ class SubjectController extends Controller
 
 
 
-        return Inertia::render('Subjects/Index', [
+        return Inertia::render('my_class/admin/Subjects/Index', [
             'records' => Subject::with('school')
                 ->latest()
                 ->paginate(10),

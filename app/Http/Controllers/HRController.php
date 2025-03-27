@@ -18,12 +18,12 @@ class HRController extends Controller
         // return Inertia::render('HR/Index', [
         //     'hrs' => $hrs,
         //     'users' => $users
-        // ]);
+        // ]);my_class\super_admin\HR
 
-        return Inertia::render('HR/Index', [
+        return Inertia::render('my_class/super_admin/HR/Index', [
             'records' => $hrs,
             'options' => [
-               
+
                 'users' => $users
             ]
         ]);

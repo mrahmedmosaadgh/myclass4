@@ -31,17 +31,18 @@ const iconComponent = computed(() => {
         .split('-')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join('');
-    
+
     return icons[componentName] || icons.HelpCircle; // Fallback to HelpCircle if icon not found
 });
 </script>
 
 <template>
-    <component 
+    <component
         :is="iconComponent"
         :size="size"
         :color="color"
         :stroke-width="strokeWidth"
         :class="class"
+        style="display: inline-block; vertical-align: middle;"
     />
 </template>

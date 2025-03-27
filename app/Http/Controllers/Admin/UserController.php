@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Admin/Users/Index', [
+        return Inertia::render('my_class/super_admin/Admin/Users/Index', [
             'users' => User::with('roles')->latest()->get(),
         ]);
     }

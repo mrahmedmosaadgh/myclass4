@@ -24,7 +24,7 @@ class CalendarController extends Controller
         $schools = School::select('id', 'name')->get();
         $academicYears = AcademicYear::select('id', 'name')->get();
 
-        return Inertia::render('Calendars/Index', [
+        return Inertia::render('my_class/admin/Calendars/Index', [
             'records' => $calendars,
             'schools' => $schools,
             'academicYears' => $academicYears,

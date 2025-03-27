@@ -16,7 +16,7 @@ class SemesterTestController extends Controller
         $schools = School::select('id', 'name')->get();
         $academicYears = AcademicYear::select('id', 'name')->get();
 
-        return Inertia::render('SemesterTests/Index', [
+        return Inertia::render('my_class/admin/SemesterTests/Index', [
             'records' => $semesterTests,
             'options' => [
                 'schools' => $schools,

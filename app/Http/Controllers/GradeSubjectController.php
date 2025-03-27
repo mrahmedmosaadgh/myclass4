@@ -14,12 +14,12 @@ class GradeSubjectController extends Controller
     public function index()
     {
         $gradeSubjects = GradeSubject::with(['grade', 'subject'])
-            ->paginate(10);
+            ->paginate(40);
 
         $grades = Grade::select('id', 'name')->get();
         $subjects = Subject::select('id', 'name')->get();
 
-        return Inertia::render('GradeSubjects/Index', [
+        return Inertia::render('my_class/admin/GradeSubjects/Index', [
             'records' => $gradeSubjects,
             'options' => [
                 'grades' => $grades,

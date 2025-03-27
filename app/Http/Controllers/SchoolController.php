@@ -11,10 +11,10 @@ class SchoolController extends Controller
 {
     public function index()
     {
-        $schools = School::with('hr')->paginate(10);
+        $schools = School::with('hr')->paginate(40);
         $hrs = HR::select('id', 'name')->get();
 
-        return Inertia::render('Schools/Index', [
+        return Inertia::render('my_class/admin/Schools/Index', [
             'schools' => $schools,
             'hrs' => $hrs
         ]);

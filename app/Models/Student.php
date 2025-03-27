@@ -36,87 +36,69 @@ class Student extends Model
         'classroom_history' => 'array'
     ];
 
-    protected static function boot()
+    protected $appends = [
+        'classroom_name',
+        'stage_name',
+        'grade_name',
+        'parent_name',
+        'school_name'
+    ];
+
+    // Define all relationships
+    public function school()
     {
-        parent::boot();
-
-        static::saving(function ($student) {
-            if ($student->classroom_id) {
-                try {
-                    $classroom = Classroom::findOrFail($student->classroom_id);
-
-                    // Verify classroom belongs to the selected school
-                    if ($student->school_id && $classroom->school_id != $student->school_id) {
-                        throw new \Exception("Selected classroom does not belong to the selected school");
-                    }
-
-                    // Auto-set stage and grade IDs from classroom
-                    $student->stage_id = $classroom->stage_id;
-                    $student->grade_id = $classroom->grade_id;
-
-                } catch (ModelNotFoundException $e) {
-                    throw new \Exception("Invalid classroom selected");
-                }
-            }
-        });
-
-        static::creating(function ($student) {
-            if (empty($student->s_id)) {
-                do {
-                    $uniqueId = 's' . strtolower(Str::random(4, 'abcdefghijklmnopqrstuvwxyz')) . rand(1000, 9999);
-                } while (self::where('s_id', $uniqueId)->exists());
-
-                $student->s_id = $uniqueId;
-            }
-
-            $user = User::where('email', $student->s_id)->first();
-
-            if (!$user) {
-                $user = User::create([
-                    'name' => $student->name,
-                    'email' => $student->s_id,
-                    'role' => 'student',
-                    'password' => bcrypt('12345678'),
-                ]);
-            }
-
-            $student->user_id = $user->id;
-        });
+        return $this->belongsTo(School::class, 'school_id', 'id');
     }
 
-    public function user()
+    public function stage()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Stage::class, 'stage_id');
+    }
+
+    public function grade()
+    {
+        return $this->belongsTo(Grade::class, 'grade_id');
+    }
+
+    public function classroom()
+    {
+        return $this->belongsTo(Classroom::class, 'classroom_id');
     }
 
     public function parent()
     {
         return $this->belongsTo(StudentParent::class, 'parent_id');
     }
-
-    public function schoolSection()
+    public function user()
     {
-        return $this->belongsTo(SchoolSection::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    // Accessor methods
+    public function getSchoolNameAttribute()
+    {
+        return $this->school ? $this->school->name : null;
     }
 
-    public function school()
+    public function getStageNameAttribute()
     {
-        return $this->belongsTo(School::class);
+        return $this->stage ? $this->stage->name : null;
     }
 
-    public function stage()
+    public function getGradeNameAttribute()
     {
-        return $this->belongsTo(Stage::class);
+        return $this->grade ? $this->grade->name : null;
     }
 
-    public function grade()
+    public function getClassroomNameAttribute()
     {
-        return $this->belongsTo(Grade::class);
+        return $this->classroom ? $this->classroom->name : null;
     }
 
-    public function classroom()
+    public function getParentNameAttribute()
     {
-        return $this->belongsTo(Classroom::class);
+        return $this->parent ? $this->parent->name : null;
     }
 }
+
+
 

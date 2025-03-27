@@ -24,17 +24,22 @@ class Schedule extends Model
         'place',
         'color_custom',
         'active',
-        'notes',
+        'notes'
     ];
 
     protected $casts = [
         'active' => 'boolean',
         'day' => 'integer',
         'period' => 'integer',
-        'num' => 'integer',
+        'num' => 'integer'
     ];
 
     // Relationships
+    public function copy()
+    {
+        return $this->belongsTo(ScheduleCopy::class);
+    }
+
     public function school()
     {
         return $this->belongsTo(School::class);
@@ -59,11 +64,11 @@ class Schedule extends Model
     {
         return $this->belongsTo(Teacher::class);
     }
-
-    // Accessors
-    public function getDayNameAttribute()
-    {
-        $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        return $days[$this->day - 1] ?? null;
-    }
+        // Accessors
+        public function getDayNameAttribute()
+        {
+            $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            return $days[$this->day - 1] ?? null;
+        }
 }
+
