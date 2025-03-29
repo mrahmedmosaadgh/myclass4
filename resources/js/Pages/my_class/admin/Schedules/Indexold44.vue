@@ -1,180 +1,110 @@
 <template>
     <AppLayout :title="pageTitle">
-{{props.records?.length}}
-        <!-- <div class="p-6">
-      <ScheduleTree :schedules="my_records_filtered_only_in_schedule" />
-    </div>
-
-
-<div v-for="item in my_records_filtered_only_in_schedule" :key="item" class="p-2">
-
-    {{ item?.period_number }}
-    {{ item?.day }}
-
-
-
-</div> -->
-        <!-- Filters Section -->
-        <div class="mb-6 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <FilterSelectV2
-                    v-model="filters.school"
-                    v-model:object="filters.school_object"
-                    :options="$page.props.auth.user.school"
-                    value-key="id"
-                    :label-key="['name', 'hr.name']"
-                    placeholder="Select School"
-                    label-separator=" - "
-                    :default-selected-index="0"
-                    :label_only="false"
-                />
-
-                <FilterSelectV2
-                    v-model="filters.classroom"
-                    v-model:object="filters.classroom_object"
-                    :options="$page.props.auth.user.classroom"
-                    value-key="id"
-                    :label-key="['name']"
-                    placeholder="Select Classroom"
-                />
-
-                <FilterSelectV2
-                    v-model="filters.schedule"
-                    v-model:object="filters.schedule_object"
-                    :options="$page.props.auth.user.schedule"
-                    value-key="id"
-                    :label-key="['cst.classroom_name', 'cst.subject_name', 'cst.teacher_name']"
-                    placeholder="Select Schedule"
-                />
+        <!-- Header Section -->
+        <div class="bg-white shadow-sm border-b border-gray-200 px-4 py-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <h2 class="text-2xl font-semibold text-gray-800">Schedule Management</h2>
+                <div class="flex items-center space-x-4">
+                    <button
+                        @click="refreshData"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                    >
+                        <svg
+                            class="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="mb-4 flex justify-end">
-                <button
-                    @click="refreshData"
-                    class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                >
-                    <svg
-                        class="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                    </svg>
-                    Refresh Table
-                </button>
-            </div>     <!-- Schedule Table -->
-        <div class="bg-white rounded-lg shadow overflow-x-auto">
 
-            <table class="min-w-full divide-y divide-gray-200" >
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                            Classroom
-                        </th>
-                        <template v-for="day in days" :key="day">
-                            <th :colspan="8" class="px-4 py-2 text-center text-sm font-medium text-gray-700 border-l">
-                                {{ day.name }}
-                            </th>
-                        </template>
+        <!-- Filters Section -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="bg-white rounded-lg shadow p-6 space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FilterSelectV2
+                        v-model="filters.schedule"
+                        v-model:object="filters.schedule_object"
+                        :options="$page.props.auth.user.schedule"
+                        value-key="id"
+                        :label-key="['cst.classroom_name', 'cst.subject_name', 'cst.teacher_name']"
+                        placeholder="Select Schedule"
+                        class="w-full"
+                    />
+                </div>
+            </div>
+        </div>
 
-
-                    </tr>
-                    <tr>
-                        <th></th> <!-- Empty cell for classroom column -->
-                        <template v-for="day in days" :key="`periods-${day}`">
-                            <th v-for="period in periods"
-                                :key="`${day}-${period}`"
-                                class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase border-l first:border-l-0">
-                                {{ period }}
-                            </th>
-                        </template>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    <tr v-for="classroom in groupedSchedules" :key="classroom.id">
-                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 border-r">
-                            {{ classroom.name }}
-                        </td>
-                        <template v-for="day in days" :key="`${classroom.id}-${day}`">
-                            <td v-for="period in periods"
-                                :key="`${classroom.id}-${day}-${period}`"
-                                class="px-2 py-2 border-l first:border-l-0">
-                                <div class="p-0"
-
-                                >
-                                <!-- :style="`background-color: ${getSessionFromCache(classroom.id, day, period)?.color_bg};color:${getSessionFromCache(classroom.id, day, period)?.color_text}`" -->
-<button @click="log(getSessionFromCache(classroom.id, day, period))">wwww</button>
-
-                                <Dropdown2 width="56" align="left"  :auto-hide="true">
-    <template #trigger>
-  <div class="p-0">
-  <card2
+        <!-- Schedule Table -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Classroom
+                                </th>
+                                <template v-for="day in days" :key="`periods-${day}`">
+                                    <th
+                                        v-for="period in periods"
+                                        :key="`${day}-${period}`"
+                                        class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l first:border-l-0"
+                                    >
+                                        <div class="flex flex-col">
+                                            <span class="text-gray-400">Period</span>
+                                            <span>{{ period }}</span>
+                                            <span class="text-xs text-gray-400">{{ periodTimes[period] }}</span>
+                                        </div>
+                                    </th>
+                                </template>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr v-for="classroom in groupedSchedules" :key="classroom.id">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 bg-gray-50">
+                                    {{ classroom.name }}
+                                </td>
+                                <template v-for="day in days" :key="`${classroom.id}-${day}`">
+                                    <td
+                                        v-for="period in periods"
+                                        :key="`${classroom.id}-${day}-${period}`"
+                                        class="px-2 py-2 border-l first:border-l-0 hover:bg-gray-50 transition-colors duration-150"
+                                    >  <card2
       v-if="getSessionFromCache(classroom.id, day, period)?.schedule?.period_number==period&&getSessionFromCache(classroom.id, day, period)?.schedule?.day==day.number&&getSessionFromCache(classroom.id, day, period) ?.schedule?.cst?.classroom ?.id==classroom.id"
   :option="getSessionFromCache(classroom.id, day, period)"
   name="radioName"
   my_class="custom-class"
   @click="filter_sessions_by_classroom(classroom.id, day, period)"
 
-  @remove_session="remove_SelectedSession($event,classroom.id, day, period)"
-
-    >
-<template #main>
-    <div class="p-0 overflow-visible">
-<button
-class=" overflow-visible px-3 absolute -right-4 -top-4 bg-red-500  z-40 scale-100 mb-6 hover:scale-150 hover:bg-red-800 hover:text-white"
-
-@click="remove_SelectedSession(getSessionFromCache(classroom.id, day, period),classroom.id, day, period)">x</button>
-    </div>
-</template>
-</card2>
-  <!-- @set_data="setSelectedSession($event,classroom.id, day, period)" -->
-<button
-v-else
-      @click="filter_sessions_by_classroom(classroom.id, day, period)"
-      class="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded">
-      filter
-    </button>
-</div>
-    </template>
-    <template #content>
-        <div class="py-1">
-
-            <RadioButtonGroup
-        v-model="my_records_filtered_selected"
-        name="officeType"
-        my_class="flex flex-wrap justify-center gap-1"
-        :options="my_records_filtered"
-        @set_data="setSelectedSession($event,classroom.id, day, period)"
-        :period_day="{
-            classroom:classroom.id, day:day.number, period:period
-        }"
-        />
-
-
-        </div>
-    </template>
-</Dropdown2>
-
-
-
-
-
-
-                                </div>
-                            </td>
-                        </template>
-                    </tr>
-                </tbody>
-            </table>
+  @set_data="setSelectedSession($event,classroom.id, day, period)"
+/>
+                                        <!-- <ScheduleCell
+                                            :schedule="getScheduleForCell(classroom.id, day, period)"
+                                            @click="handleScheduleClick($event, day, period)"
+                                            @add="handleAddSchedule(classroom.id, day, period)"
+                                        /> -->
+                                    </td>
+                                </template>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <!-- Schedule Modal -->
+        <!-- Modal -->
         <DialogModal_8
             v-if="modalOpen"
             :show="modalOpen"
@@ -183,6 +113,7 @@ v-else
             :formData="editing"
             @close="handleModalClose"
             @submitted="handleSubmit"
+            class="z-50"
         />
     </AppLayout>
 </template>
@@ -372,56 +303,9 @@ const setSelectedSession=(event,classroomId, day, period) => {
 
     handleSubmit2(selected_session_to_update.value,classroomId, day, period);
 };
-const remove_SelectedSession=(event,classroomId, day, period) => {
-    if (!confirm('Are you sure you want to delete this ?')) return;
 
 
-    selected_session_to_update.value = event;
 
-    handleSubmit_remove(selected_session_to_update.value,classroomId, day, period);
-};
-
-const handleSubmit_remove = (data_schedule, classroomId, day, period) => {
-    if (submitting.value) return;
-    submitting.value = true;
-
-    const formData = {
-        ...data_schedule,
-        id: data_schedule.id,
-        day: null,
-        period_number: null,
-        school_id: data_schedule.school_id,
-        copy_id: data_schedule.copy_id,
-        remove_session:1
-        // active: data_schedule.active ?? true
-    };
-
-    axios.post('/admin/schedule/update2', formData)
-        .then(response => {
-            // Update local records
-            records.value = records.value.map(record =>
-                record.id === formData.id ? response.data.record : record
-            );
-            toast.success(response.data.message);
-            return refreshData();
-        })
-        .catch(err => {
-            if (err.response?.data?.conflict) {
-                toast.error(err.response.data.message, {
-                    duration: 5000,
-                    position: 'bottom-right',
-                    closeButton: true
-                });
-                console.error('Conflict details:', err.response.data.conflict);
-            } else {
-                const errorMessage = err.response?.data?.message || 'An unexpected error occurred';
-                toast.error(errorMessage);
-            }
-        })
-        .finally(() => {
-            submitting.value = false;
-        });
-};
 
 
 
@@ -850,16 +734,44 @@ const selectSession = (classroomId, day, period, option) => {
 </script>
 
 <style scoped>
-.border-l {
-    border-left: 1px solid #e5e7eb;
+.table-wrapper {
+    @apply overflow-x-auto shadow rounded-lg border border-gray-200;
 }
-.border-r {
-    border-right: 1px solid #e5e7eb;
+
+/* Hover effects */
+.hover-column {
+    @apply bg-gray-50;
 }
-.first\:border-l-0:first-child {
-    border-left: 0;
+
+.hover-row:hover {
+    @apply bg-gray-50;
+}
+
+/* Custom scrollbar */
+.table-wrapper::-webkit-scrollbar {
+    @apply h-2 w-2;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+    @apply transition-opacity duration-200;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    @apply opacity-0;
 }
 </style>
+
 
 
 

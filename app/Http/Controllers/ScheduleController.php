@@ -12,6 +12,54 @@ use Inertia\Inertia;
 class ScheduleController extends Controller
 {
 
+
+
+    public function load_data()
+    {
+        try {
+            $active_copy = ScheduleCopy::where('active', true)->first();
+
+            if (!$active_copy) {
+                return response()->json([
+                    'success' => false,
+                    'records' => [],
+                    'options' => [],
+                    'active_copy' => null,
+                    'message' => 'No active schedule copy found. Please activate one copy.'
+                ], 404);
+            }
+
+            $records = Schedule::with([
+                'cst',
+                'cst.classroom',
+                'cst.subject',
+                'cst.teacher',
+            ])
+                ->where('copy_id', $active_copy->id)
+                ->orderBy('period_number')
+                ->get();
+
+            $csts = ClassroomSubjectTeacher::with(['classroom', 'subject', 'teacher'])->get();
+
+            return response()->json([
+                'success' => true,
+                'records' => $records,
+                'options' => [
+                    'csts' => $csts,
+                    'activeCopy' => $active_copy
+                ],
+                'message' => 'Data loaded successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
     public function index()
     {
         $active_copy = ScheduleCopy::where('active', true)->first();
@@ -146,8 +194,28 @@ class ScheduleController extends Controller
             ], 500);
         }
     }
-    public function update2(Request $request, Schedule $schedule)
+    public function update2(Request $request)
     {
+        if($request['remove_session']){
+// return $request['remove_session'];
+
+$schedule = Schedule::findOrFail($request['id']);
+// unset($validated['id']); // Remove id from update data
+
+$schedule->update([
+    'day' => null,
+    'period_number' => null
+]);
+            // Load necessary relationships
+            $schedule->load(['cst.classroom', 'cst.subject', 'cst.teacher']);
+
+            return response()->json([
+                'message' => 'Schedule updated successfully',
+                'record' => $schedule
+            ]);
+        }
+// return $request->all();
+
         try {
             $validated = $request->validate([
                 'id' => 'required|exists:schedules,id',
@@ -157,20 +225,48 @@ class ScheduleController extends Controller
                 'active' => 'boolean',
                 'notes' => 'nullable|string|max:1000'
             ]);
-            $active_copy = ScheduleCopy::where('active', true)->first();
 
-            // Add copy_id from active copy
-            $validated['copy_id'] = $active_copy->id;
-            return $validated;
+            // Check for scheduling conflicts
+            $conflicts = $this->checkForConflicts([
+                'day' => $validated['day'],
+                'period_number' => $validated['period_number'],
+                'classroom_id' => ClassroomSubjectTeacher::find($validated['cst_id'])->classroom_id,
+                'current_schedule_id' => $validated['id']
+            ]);
+
+            if ($conflicts['exists']) {
+                $conflictingSchedule = $conflicts['conflict'];
+                $dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+                return response()->json([
+                    'message' => sprintf(
+                        'Schedule conflict: %s is already scheduled for %s at period %d in %s with %s',
+                        $conflictingSchedule->cst->subject->name,
+                        $dayNames[$conflictingSchedule->day - 1],
+                        $conflictingSchedule->period_number,
+                        $conflictingSchedule->cst->classroom->name,
+                        $conflictingSchedule->cst->teacher->name
+                    ),
+                    'conflict' => $conflictingSchedule
+                ], 422);
+            }
+
+            $schedule = Schedule::findOrFail($validated['id']);
+            unset($validated['id']); // Remove id from update data
+
             $schedule->update($validated);
+
+            // Load necessary relationships
+            $schedule->load(['cst.classroom', 'cst.subject', 'cst.teacher']);
 
             return response()->json([
                 'message' => 'Schedule updated successfully',
-                'record' => $schedule->fresh(['cst.classroom', 'cst.subject', 'cst.teacher'])
+                'record' => $schedule
             ]);
+
         } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'update Validation failed',
+                'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
@@ -199,20 +295,33 @@ class ScheduleController extends Controller
     // Optional: Add a method to check for conflicts
     private function checkForConflicts($data)
     {
-        $existingSchedule = Schedule::where('day', $data['day'])
+        $query = Schedule::where('day', $data['day'])
             ->where('period_number', $data['period_number'])
             ->whereHas('cst', function ($query) use ($data) {
                 $query->where('classroom_id', $data['classroom_id']);
-            })
-            ->first();
+            });
+
+        // Exclude current schedule from conflict check
+        if (isset($data['current_schedule_id'])) {
+            $query->where('id', '!=', $data['current_schedule_id']);
+        }
+
+        $existingSchedule = $query->first();
 
         if ($existingSchedule) {
             return [
                 'exists' => true,
-                'conflict' => $existingSchedule
+                'conflict' => $existingSchedule->load(['cst.classroom', 'cst.subject', 'cst.teacher'])
             ];
         }
 
         return ['exists' => false];
     }
 }
+
+
+
+
+
+
+

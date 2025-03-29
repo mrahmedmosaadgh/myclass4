@@ -12,6 +12,7 @@ class ClassroomSubjectTeacher extends Model
 
     protected $fillable = [
         'school_id',
+        'academic_year_id',
         'grade_id',
         'classroom_id',
         'subject_id',
@@ -120,11 +121,13 @@ class ClassroomSubjectTeacher extends Model
                         $colors = ['blue', 'green', 'purple', 'orange', 'pink', 'teal', 'indigo', 'red', 'yellow', 'cyan'];
                         $randomColor = $colors[array_rand($colors)];
 
-                        if (!is_array($classroomSubjectTeacher->data)) {
-                            $classroomSubjectTeacher->data = [];
+                        // Properly set the data attribute
+                        $data = $classroomSubjectTeacher->data ?? [];
+                        if (is_string($data)) {
+                            $data = json_decode($data, true) ?? [];
                         }
-
-                        $classroomSubjectTeacher->data['color_custom'] = $randomColor;
+                        $data['color_custom'] = $randomColor;
+                        $classroomSubjectTeacher->data = $data;
                     }
 
                 } catch (ModelNotFoundException $e) {
@@ -135,6 +138,8 @@ class ClassroomSubjectTeacher extends Model
 
     }
 }
+
+
 
 
 

@@ -46,6 +46,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::resource('schedule-copies', ScheduleCopyController::class);
     Route::resource('schedules', ScheduleController::class);
     Route::post('schedule/update2', [ScheduleController::class, 'update2'])->name('schedules.update2');
+    Route::get('schedule/load-data', [ScheduleController::class, 'load_data'])->name('schedules.load_data');
+
+
     Route::resource('curriculum', CurriculumController::class);
     // Route::resource('curriculum-detail', CurriculumDetailController::class);
     // Route::resource('curriculum-map', CurriculumMapController::class);

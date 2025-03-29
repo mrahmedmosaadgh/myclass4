@@ -121,19 +121,8 @@
   my_class="custom-class"
   @click="filter_sessions_by_classroom(classroom.id, day, period)"
 
-  @remove_session="remove_SelectedSession($event,classroom.id, day, period)"
-
-    >
-<template #main>
-    <div class="p-0 overflow-visible">
-<button
-class=" overflow-visible px-3 absolute -right-4 -top-4 bg-red-500  z-40 scale-100 mb-6 hover:scale-150 hover:bg-red-800 hover:text-white"
-
-@click="remove_SelectedSession(getSessionFromCache(classroom.id, day, period),classroom.id, day, period)">x</button>
-    </div>
-</template>
-</card2>
-  <!-- @set_data="setSelectedSession($event,classroom.id, day, period)" -->
+  @set_data="setSelectedSession($event,classroom.id, day, period)"
+/>
 <button
 v-else
       @click="filter_sessions_by_classroom(classroom.id, day, period)"
@@ -372,56 +361,9 @@ const setSelectedSession=(event,classroomId, day, period) => {
 
     handleSubmit2(selected_session_to_update.value,classroomId, day, period);
 };
-const remove_SelectedSession=(event,classroomId, day, period) => {
-    if (!confirm('Are you sure you want to delete this ?')) return;
 
 
-    selected_session_to_update.value = event;
 
-    handleSubmit_remove(selected_session_to_update.value,classroomId, day, period);
-};
-
-const handleSubmit_remove = (data_schedule, classroomId, day, period) => {
-    if (submitting.value) return;
-    submitting.value = true;
-
-    const formData = {
-        ...data_schedule,
-        id: data_schedule.id,
-        day: null,
-        period_number: null,
-        school_id: data_schedule.school_id,
-        copy_id: data_schedule.copy_id,
-        remove_session:1
-        // active: data_schedule.active ?? true
-    };
-
-    axios.post('/admin/schedule/update2', formData)
-        .then(response => {
-            // Update local records
-            records.value = records.value.map(record =>
-                record.id === formData.id ? response.data.record : record
-            );
-            toast.success(response.data.message);
-            return refreshData();
-        })
-        .catch(err => {
-            if (err.response?.data?.conflict) {
-                toast.error(err.response.data.message, {
-                    duration: 5000,
-                    position: 'bottom-right',
-                    closeButton: true
-                });
-                console.error('Conflict details:', err.response.data.conflict);
-            } else {
-                const errorMessage = err.response?.data?.message || 'An unexpected error occurred';
-                toast.error(errorMessage);
-            }
-        })
-        .finally(() => {
-            submitting.value = false;
-        });
-};
 
 
 

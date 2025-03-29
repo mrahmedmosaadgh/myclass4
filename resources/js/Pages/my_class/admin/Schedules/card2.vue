@@ -1,40 +1,59 @@
 <template>
-  <div @click="$emit('set_data', option)" class="_controlGroup_19yuc_175" :class="my_class">
-    <label>
-      <!-- <input
-        type="checkbox"
-        v-model="model"
-        :name="name"
-        :value="option"
-        class="hidden"
-      > -->
-      <div
-        class="_boxRadioButton_19yuc_202 w-18 h-18 !border-4 border-solid hover:opacity-100 hover:scale-125  opacity-50"
-        :style="`background-color: ${option?.cst?.subject?.color_bg};
-                color: ${option?.cst?.subject?.color_text};
-                 ${model === option ? 'border-color:green; ' : 'border-color:white;  '}`
-                 "
-      >
-        <span class="p-0">{{ option?.cst?.classroom?.name }}</span>
-        <span class="p-0">
+  <div
+  class="schedule-card"
+  :class="[my_class, { 'selected': model === option }]"
+  >
+  <button  class="p-4 m-2" @click="$emit('remove_session',option)">x</button>
+  <div
 
-            <pre>
-            {{ option?.schedule?.period_order }}
-            <!-- {{ option?.schedule?.period_order }} -->
+      class="card-content"
+      :style="`
+        --bg-color: ${option?.cst?.subject?.color_bg || '#4F46E5'};
+        --text-color: ${option?.cst?.subject?.color_text || '#ffffff'};
+      `"
+    ><div class="p-0 relative">
+    <slot name="main"/>
 
-        </pre>
+</div>
+      <!-- Header -->
+      <div class="card-header">
+        <span class="classroom-badge">
+          {{ option?.cst?.classroom?.name }}
         </span>
-        <div class="bg-blue-800 px-2 rounded-full scale-75 text-white">
+        <span class="period-badge">
+          Period {{ option?.schedule?.period_order }}
+        </span>
+      </div>
+
+      <!-- Subject -->
+      <div class="subject-container">
+        <h3 class="subject-name">
           {{ option?.cst?.subject?.name }}
-        </div>
+        </h3>
+      </div>
+
+      <!-- Teacher -->
+      <div class="teacher-container">
         <NameAbbreviator
-          class="scale-75"
           :full-name="option?.cst?.teacher?.name"
           separator=" "
           :letters_count="2"
         />
       </div>
-    </label>
+
+      <!-- Selection Indicator -->
+      <div class="selection-indicator">
+        <svg
+          v-if="model === option"
+          class="check-icon"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+
+      </div>
+    </div>
   </div>
 </template>
 
@@ -42,7 +61,7 @@
 import NameAbbreviator from './NameAbbreviator2.vue';
 
 const model = defineModel();
-const emit = defineEmits(['set_data']);
+const emit = defineEmits([ 'remove_session']);
 
 defineProps({
   name: {
@@ -60,4 +79,116 @@ defineProps({
 });
 </script>
 
+<style scoped>
+.schedule-card {
+  @apply relative cursor-pointer transition-all duration-300 ease-in-out;
+  perspective: 1000px;
+}
+
+.card-content {
+  @apply relative p-4 rounded-xl shadow-lg overflow-hidden;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transform-style: preserve-3d;
+  transition: all 0.3s ease;
+}
+
+.schedule-card:hover .card-content {
+  @apply shadow-xl;
+  transform: translateY(-2px);
+}
+
+.card-header {
+  @apply flex justify-between items-center mb-3;
+}
+
+.classroom-badge {
+  @apply px-2 py-1 rounded-lg text-sm font-medium;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.period-badge {
+  @apply px-2 py-1 rounded-lg text-sm font-semibold;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.subject-container {
+  @apply my-3;
+}
+
+.subject-name {
+  @apply text-lg font-bold truncate;
+}
+
+.teacher-container {
+  @apply mt-2 flex items-center justify-between;
+}
+
+.selection-indicator {
+  @apply absolute top-2 right-2 w-6 h-6 flex items-center justify-center;
+}
+
+.check-icon {
+  @apply w-5 h-5 text-green-500;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
+}
+
+/* Selected state */
+.selected .card-content {
+  @apply ring-4 ring-green-500 ring-opacity-50;
+}
+
+/* Glass effect */
+.card-content::before {
+  content: '';
+  @apply absolute inset-0 opacity-20;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .card-content {
+    @apply p-3;
+  }
+
+  .subject-name {
+    @apply text-base;
+  }
+
+  .classroom-badge,
+  .period-badge {
+    @apply text-xs;
+  }
+}
+
+/* Animation for selection */
+@keyframes selectPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.selected {
+  animation: selectPulse 0.3s ease-in-out;
+}
+
+/* Hover effects */
+.schedule-card:hover .card-content::before {
+  @apply opacity-30;
+}
+
+/* Loading state */
+.schedule-card.loading {
+  @apply animate-pulse;
+}
+
+/* Error state */
+.schedule-card.error .card-content {
+  @apply border-red-500 border-2;
+}
+</style>
 

@@ -1,23 +1,44 @@
 <template>
     <AppLayout :title="pageTitle">
-{{props.records?.length}}
-        <!-- <div class="p-6">
-      <ScheduleTree :schedules="my_records_filtered_only_in_schedule" />
+
+
+        <details>
+
+<pre>
+    props.options?.classrooms:{{ props.options?.csts[0]?.classroom }}
+
+
+</pre>
+</details>
+<!-- <CardComponent2></CardComponent2> -->
+
+<details>
+
+    <div class="p-0 flex flex-wrap justify-center">
+
+        <RadioButtonGroup
+        v-model="my_records_filtered_selected"
+        name="officeType"
+        :my_class="'flex flex-wrap justify-center gap-1'"
+        :options="filteredRecords"
+        :period_day="{
+              day:day?.number, period:period
+        }"
+        />
+        <!-- disabled="disabled" -->
     </div>
+</details>
+        <details>
 
+            <pre>
+                props.records:{{ props.records2 }}
 
-<div v-for="item in my_records_filtered_only_in_schedule" :key="item" class="p-2">
-
-    {{ item?.period_number }}
-    {{ item?.day }}
-
-
-
-</div> -->
+            </pre>
+        </details>
         <!-- Filters Section -->
         <div class="mb-6 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <FilterSelectV2
+                <FilterSelectV2
                     v-model="filters.school"
                     v-model:object="filters.school_object"
                     :options="$page.props.auth.user.school"
@@ -48,30 +69,10 @@
                 />
             </div>
         </div>
-        <div class="mb-4 flex justify-end">
-                <button
-                    @click="refreshData"
-                    class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                >
-                    <svg
-                        class="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                        />
-                    </svg>
-                    Refresh Table
-                </button>
-            </div>     <!-- Schedule Table -->
-        <div class="bg-white rounded-lg shadow overflow-x-auto">
 
-            <table class="min-w-full divide-y divide-gray-200" >
+        <!-- Schedule Table -->
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -114,26 +115,15 @@
                                 <Dropdown2 width="56" align="left"  :auto-hide="true">
     <template #trigger>
   <div class="p-0">
-  <card2
-      v-if="getSessionFromCache(classroom.id, day, period)?.schedule?.period_number==period&&getSessionFromCache(classroom.id, day, period)?.schedule?.day==day.number&&getSessionFromCache(classroom.id, day, period) ?.schedule?.cst?.classroom ?.id==classroom.id"
+      <card2
+      v-if="getSessionFromCache(classroom.id, day, period)?.schedule?.period_number==period&&getSessionFromCache(classroom.id, day, period)?.schedule?.day==day.number"
   :option="getSessionFromCache(classroom.id, day, period)"
   name="radioName"
   my_class="custom-class"
   @click="filter_sessions_by_classroom(classroom.id, day, period)"
 
-  @remove_session="remove_SelectedSession($event,classroom.id, day, period)"
-
-    >
-<template #main>
-    <div class="p-0 overflow-visible">
-<button
-class=" overflow-visible px-3 absolute -right-4 -top-4 bg-red-500  z-40 scale-100 mb-6 hover:scale-150 hover:bg-red-800 hover:text-white"
-
-@click="remove_SelectedSession(getSessionFromCache(classroom.id, day, period),classroom.id, day, period)">x</button>
-    </div>
-</template>
-</card2>
-  <!-- @set_data="setSelectedSession($event,classroom.id, day, period)" -->
+  @set_data="setSelectedSession($event,classroom.id, day, period)"
+/>
 <button
 v-else
       @click="filter_sessions_by_classroom(classroom.id, day, period)"
@@ -145,12 +135,11 @@ v-else
     <template #content>
         <div class="py-1">
 
-            <RadioButtonGroup
+            <RadioButtonGroup class="scale-75 "
         v-model="my_records_filtered_selected"
         name="officeType"
         my_class="flex flex-wrap justify-center gap-1"
         :options="my_records_filtered"
-        @set_data="setSelectedSession($event,classroom.id, day, period)"
         :period_day="{
             classroom:classroom.id, day:day.number, period:period
         }"
@@ -188,8 +177,7 @@ v-else
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { ref, computed, watch } from 'vue';
 import { toast } from 'vue3-toastify';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import DialogModal_8 from './DialogModal_8.vue';
@@ -202,7 +190,7 @@ import NameAbbreviator from './NameAbbreviator2.vue';
 import Dropdown2 from './Dropdown2.vue';
 import card2 from './card2.vue';
 // import DropdownLink from '@/Components/DropdownLink.vue';
-import ScheduleTree from '@/Components/TreeView/ScheduleTree.vue';
+
 import axios from 'axios';
 
 
@@ -210,7 +198,6 @@ import axios from 'axios';
 
 
 const selectedType  =ref('Cozy')
-const my_records_filtered_selected  =ref(null)
 const options = ref([
   { value: 'Cozy2', label: 'Cozy'  },
 //   { value: 'Green', label: 'Green'  },
@@ -240,13 +227,9 @@ const props = defineProps({
     }
 });
 const my_records=ref(props?.records)
-const my_records_filtered=ref(props?.records)
-const my_records_filtered_only_in_schedule = ref(
-    props?.records?.filter(record =>
-        record?.day != null &&
-        record?.period_number != null
-    ) || []
-);
+const my_records_filtered = ref(props.records || []);
+const my_records_filtered_selected = ref({});
+
 console.log('Props received:', {
     records: props.records,
     options: props.options,
@@ -300,24 +283,15 @@ const filters = ref({
 const isLoading = ref(false);
 const error = ref(null);
 
-// At the top of your component, create reactive copies of props
-const localRecords = ref(props.records || []);
-const localOptions = ref(props.options || {});
-
 // Watch for props changes
 watch(() => props.records, (newRecords) => {
-    localRecords.value = newRecords;
-}, { deep: true });
-
-watch(() => props.options, (newOptions) => {
-    localOptions.value = newOptions;
+    records.value = newRecords;
 }, { deep: true });
 
 // Computed properties
-
 const groupedSchedules = computed(() => {
-    console.log('CSTs from options:', localOptions.value?.csts);
-    const records = localRecords.value || [];
+    console.log('CSTs from options:', props.options?.csts);
+    const records = props.records || [];
     const uniqueClassrooms = [...new Set(records.map(record => record.cst?.classroom?.id))]
         .map(classroomId => {
             const record = records.find(r => r.cst?.classroom?.id === classroomId);
@@ -332,22 +306,77 @@ const groupedSchedules = computed(() => {
     return uniqueClassrooms;
 });
 
-const scheduleMatrix = ref({});
+
+
+const groupedSchedules2 = computed(() => {
+    console.log('CSTs from options:', props.options?.csts);
+    const csts = props.options?.csts || [];
+    const uniqueClassrooms = [...new Set(csts.map(cst => cst.classroom.id))]
+        .map(classroomId => {
+            const cst = csts.find(cst => cst.classroom.id === classroomId);
+            return {
+                id: cst.classroom.id,
+                name: cst.classroom.name,
+                grade: cst.classroom.grade,
+
+            };
+        });
+
+    console.log('Processed classrooms:', uniqueClassrooms);
+    return uniqueClassrooms;
+});
+
+// Add these computed properties
+const scheduleMatrix = computed(() => {
+    const matrix = {};
+
+    // Initialize empty matrix
+    groupedSchedules.value.forEach(classroom => {
+        matrix[classroom.id] = {};
+        for (let day = 1; day <= 5; day++) {
+            matrix[classroom.id][day] = {};
+            for (let period = 1; period <= 8; period++) {
+                matrix[classroom.id][day][period] = null;
+            }
+        }
+    });
+
+    // Fill in the schedules
+    props.records.forEach(schedule => {
+        const classroomId = schedule.cst.classroom.id;
+        if (matrix[classroomId]) {
+            matrix[classroomId][schedule.day][schedule.period_number] = {
+                id: schedule.id,
+                subject: schedule.cst.subject.name,
+                teacher: schedule.cst.teacher.name,
+                is_disabled: !schedule.active,
+                color_bg: schedule.cst.subject.color_bg,
+                color_text: schedule.cst.subject.color_text
+
+
+            };
+        }
+    });
+
+    return matrix;
+});
 
 // Add this computed property
 const scheduleCache = computed(() => {
     if (!props.records?.length) return {};
 
     return props.records.reduce((cache, schedule) => {
+        if (!schedule?.day || !schedule?.period_number) return cache;
+
         const key = `${schedule.day}-${schedule.period_number}`;
         cache[key] = {
-            subject: schedule.cst?.subject?.name,
-            teacher: schedule.cst?.teacher?.name,
-            color_bg: schedule.cst?.subject?.color_bg,
-            color_text: schedule.cst?.subject?.color_text,
-            cst: schedule.cst,
-            schedule: schedule,
-            id: schedule?.id,
+            subject: schedule.cst?.subject?.name || '',
+            teacher: schedule.cst?.teacher?.name || '',
+            color_bg: schedule.cst?.subject?.color_bg || '#ffffff',
+            color_text: schedule.cst?.subject?.color_text || '#000000',
+            cst: schedule.cst || null,
+            schedule,
+            id: schedule?.id
         };
         return cache;
     }, {});
@@ -372,56 +401,8 @@ const setSelectedSession=(event,classroomId, day, period) => {
 
     handleSubmit2(selected_session_to_update.value,classroomId, day, period);
 };
-const remove_SelectedSession=(event,classroomId, day, period) => {
-    if (!confirm('Are you sure you want to delete this ?')) return;
 
 
-    selected_session_to_update.value = event;
-
-    handleSubmit_remove(selected_session_to_update.value,classroomId, day, period);
-};
-
-const handleSubmit_remove = (data_schedule, classroomId, day, period) => {
-    if (submitting.value) return;
-    submitting.value = true;
-
-    const formData = {
-        ...data_schedule,
-        id: data_schedule.id,
-        day: null,
-        period_number: null,
-        school_id: data_schedule.school_id,
-        copy_id: data_schedule.copy_id,
-        remove_session:1
-        // active: data_schedule.active ?? true
-    };
-
-    axios.post('/admin/schedule/update2', formData)
-        .then(response => {
-            // Update local records
-            records.value = records.value.map(record =>
-                record.id === formData.id ? response.data.record : record
-            );
-            toast.success(response.data.message);
-            return refreshData();
-        })
-        .catch(err => {
-            if (err.response?.data?.conflict) {
-                toast.error(err.response.data.message, {
-                    duration: 5000,
-                    position: 'bottom-right',
-                    closeButton: true
-                });
-                console.error('Conflict details:', err.response.data.conflict);
-            } else {
-                const errorMessage = err.response?.data?.message || 'An unexpected error occurred';
-                toast.error(errorMessage);
-            }
-        })
-        .finally(() => {
-            submitting.value = false;
-        });
-};
 
 
 
@@ -521,80 +502,58 @@ const handleModalClose = () => {
     editing.value = null;
     submitting.value = false;
 };
-const show_table =ref(true)
-const refreshData = () => {
-    show_table.value = false;
-    router.reload({
-        only: ['records', 'options'],
-        preserveScroll: true,
-        onFinish: () => {
-            show_table.value = true;
-            toast.success('Schedule data refreshed successfully');
-        },
-        onError: () => {
-            show_table.value = true;
-            toast.error('Failed to refresh data');
-        }
-    });
+
+const refreshData = async () => {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+        const response = await axios.get(baseUrl);
+        records.value = response.data.records || [];
+    } catch (err) {
+        error.value = err.response?.data?.message || 'Failed to load schedule data';
+        toast.error(error.value);
+    } finally {
+        isLoading.value = false;
+    }
 };
-const refreshData2 = () => {
-    show_table.value=false
-    axios.get('/admin/schedule/load-data')
-        .then(response => {
-            my_records.value = response.data.records;
-            my_records_filtered.value = response.data.records;
-            my_records_filtered_only_in_schedule.value = response.data.records.filter(record =>
-                record?.day != null &&
-                record?.period_number != null
-            );
-            toast.success('Schedule data refreshed successfully');
-            show_table.value=true
-        })
-        .catch(error => {
-            show_table.value=true
-            console.error('Error refreshing data:', error);
-            toast.error('Failed to refresh data');
-        });
-};
-const handleSubmit2 = (data_schedule, classroomId, day, period) => {
-    if (submitting.value) return;
-    submitting.value = true;
+// handleSubmit2(selected_session_to_update.value,classroomId, day, period)
+const handleSubmit2 = async (data_schedule,classroomId, day, period) => {
+
 
     const formData = {
         ...data_schedule,
         id: data_schedule.id,
-        day: day.number,
+        day:  day.number,
         period_number: period,
         school_id: data_schedule.school_id,
         copy_id: data_schedule.copy_id,
         active: data_schedule.active ?? true
     };
 
-    axios.post('/admin/schedule/update2', formData)
-        .then(response => {
-            // Update local records
-            records.value = records.value.map(record =>
-                record.id === formData.id ? response.data.record : record
-            );
-            toast.success(response.data.message);
-            return refreshData();
-        })
-        .catch(err => {
-            if (err.response?.data?.conflict) {
-                toast.error(err.response.data.message, {
-                    duration: 5000,
-                    position: 'bottom-right',
-                    closeButton: true
-                });
-                console.error('Conflict details:', err.response.data.conflict);
-            } else {
-                const errorMessage = err.response?.data?.message || 'An unexpected error occurred';
-                toast.error(errorMessage);
-            }
-        })
-        .finally(() => {
-            submitting.value = false;
-        });
+    try {
+        const url = '/admin/schedule/update2';
+        const method =   'post';
+        // const method = formData.id ? 'put' : 'post';
+        console.log('formData22222222___________',formData);
+        console.log('3333___________',data_schedule,classroomId, day, period);
+return
+        const response = await axios[method](url, formData);
+
+        records.value = formData.id
+            ? records.value.map(record => record.id === editing.value.id ? response.data : record)
+            : [...records.value, response.data];
+
+        handleModalClose();
+        onSuccess();
+        toast.success(`Schedule ${formData.id ? 'updated' : 'created'} successfully`);
+    } catch (err) {
+        const errorMessage = err.response?.data?.message || 'An unexpected error occurred';
+        onError(err.response?.data?.errors || { error: [errorMessage] });
+        toast.error(errorMessage);
+    } finally {
+        submitting.value = false;
+    }
 };
 
 const handleSubmit = async ({ form, onSuccess, onError }) => {
@@ -614,11 +573,7 @@ const handleSubmit = async ({ form, onSuccess, onError }) => {
 
     try {
         const url = '/admin/schedule/update2';
-        const method =   'post';
-        // const method = formData.id ? 'put' : 'post';
-        console.log('formData___________',formData);
-return
-        const response = await axios[method](url, formData);
+        const response = await axios.post(url, formData);
 
         records.value = formData.id
             ? records.value.map(record => record.id === editing.value.id ? response.data : record)
@@ -847,6 +802,14 @@ const selectSession = (classroomId, day, period, option) => {
     console.log('Selected:', { classroomId, day, period, option });
     // You might want to emit an event or update some state
 };
+
+// Add this computed property to filter out null values
+const filteredRecords = computed(() => {
+  return my_records_filtered.value?.filter(record => record != null) || [];
+});
+
+// Update the my_records_filtered ref initialization
+
 </script>
 
 <style scoped>
@@ -860,19 +823,6 @@ const selectSession = (classroomId, day, period, option) => {
     border-left: 0;
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

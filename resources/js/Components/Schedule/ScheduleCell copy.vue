@@ -1,22 +1,19 @@
 <template>
-    <div class="h-full min-h-[80px]">
+    <div class="h-full">
         <!-- Schedule Content -->
         <div v-if="schedule"
-             :style="`background-color: ${schedule?.cst?.subject?.color_bg}; color: ${schedule?.cst?.subject?.color_text}`"
              :class="[
-                 'p-2 rounded-lg h-full transition-all duration-200 hover:shadow-md cursor-pointer',
+                 'p-2 rounded-lg h-full transition-all duration-200',
+                 
                  { 'opacity-75': schedule.is_disabled }
              ]"
              @click="$emit('click', schedule)">
             <div class="flex flex-col gap-1">
-                <div class="font-medium text-sm truncate">
+                <div class="font-medium text-sm">
                     {{ schedule?.cst?.subject?.name || schedule?.subject }}
                 </div>
-                <div class="text-xs truncate">
+                <div class="text-xs">
                     {{ schedule?.cst?.teacher?.name || schedule?.teacher }}
-                </div>
-                <div class="text-xs opacity-75 truncate">
-                    {{ schedule?.cst?.classroom?.name }}
                 </div>
             </div>
         </div>
@@ -24,14 +21,9 @@
         <!-- Empty State -->
         <div v-else
              class="p-2 h-full flex items-center justify-center border border-dashed
-                    border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50
-                    transition-colors duration-200"
+                    border-gray-300 rounded cursor-pointer hover:bg-gray-50"
              @click="$emit('add')">
-            <span class="text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-            </span>
+            <span class="text-gray-400">+</span>
         </div>
     </div>
 </template>
@@ -67,7 +59,6 @@ const getSubjectColor = (subject) => {
     min-height: 100px;
 }
 </style>
-
 
 
 

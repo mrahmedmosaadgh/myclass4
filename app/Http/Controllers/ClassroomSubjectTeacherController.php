@@ -35,20 +35,37 @@ class ClassroomSubjectTeacherController extends Controller
 
     public function store(Request $request)
     {
+        // Get active academic year for the school first
+        $activeYear = \App\Models\AcademicYear::where('school_id', $request->school_id)
+            ->where('active', true)
+            ->firstOrFail();
+
         // Merge grade_id from classroom before validation
         $classroom = Classroom::findOrFail($request->classroom_id);
-        $request->merge(['grade_id' => $classroom->grade_id]);
 
+        // Create the data array with all required fields
+        $data = [
+            'school_id' => $request->school_id,
+            'academic_year_id' => $activeYear->id,
+            'grade_id' => $classroom->grade_id,
+            'classroom_id' => $request->classroom_id,
+            'subject_id' => $request->subject_id,
+            'teacher_id' => $request->teacher_id,
+            'classes_per_week' => $request->classes_per_week,
+            'data' => ['created_at' => now()->toDateTimeString()]
+        ];
+
+        // Validate the data
         $validated = $request->validate([
             'school_id' => 'required|exists:schools,id',
             'classroom_id' => 'required|exists:classrooms,id',
             'subject_id' => 'required|exists:subjects,id',
             'teacher_id' => 'required|exists:teachers,id',
             'classes_per_week' => 'required|integer|min:1',
-            'data' => 'nullable|json'
         ]);
 
-        ClassroomSubjectTeacher::create($validated);
+        // Create the record with all required fields
+        $record = ClassroomSubjectTeacher::create($data);
 
         return redirect()->back()->with('success', 'Record created successfully');
     }
@@ -60,13 +77,30 @@ class ClassroomSubjectTeacherController extends Controller
 
         $validated = $request->validate([
             'school_id' => 'required|exists:schools,id',
-            // 'grade_id' => 'required|exists:grades,id',
             'classroom_id' => 'required|exists:classrooms,id',
             'subject_id' => 'required|exists:subjects,id',
             'teacher_id' => 'required|exists:teachers,id',
             'classes_per_week' => 'required|integer|min:1',
-            'data' => 'nullable|json'
         ]);
+
+        // Get active academic year for the school
+        $activeYear = \App\Models\AcademicYear::where('school_id', $validated['school_id'])
+            ->where('active', true)
+            ->first();
+
+        if (!$activeYear) {
+            return redirect()->back()->with('error', 'No active academic year found for this school');
+        }
+
+        // Add academic_year_id to validated data
+        $validated['academic_year_id'] = $activeYear->id;
+
+        // Preserve existing data and merge new data
+        $existingData = $classroomSubjectTeacher->data ?? [];
+        if (is_string($existingData)) {
+            $existingData = json_decode($existingData, true) ?? [];
+        }
+        $validated['data'] = array_merge($existingData, ['updated_at' => now()->toDateTimeString()]);
 
         $classroomSubjectTeacher->update($validated);
 
@@ -219,4 +253,8 @@ class ClassroomSubjectTeacherController extends Controller
         }
     }
 }
+
+
+
+
 
