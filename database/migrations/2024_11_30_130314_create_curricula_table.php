@@ -20,8 +20,6 @@ return new class extends Migration
             $table->foreignId('subject_id')->constrained('subjects') ;
             $table->boolean('active')->default(false);
             $table->timestamps();
-            $table->softDeletes(); // Add this line for soft deletes
-
         });
     }
 

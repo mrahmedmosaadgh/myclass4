@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('date');
             $table->integer('week');
             $table->string('day');
-            $table->tinyInteger('day_number')->comment('1: sun, 2: mon, 3: tuse, 4: wedn,5:thurs,6 fri,7 sater');
+            $table->tinyInteger('day_number')->comment('1: Sunday, 2: Monday, 3: Tuesday, 4: Wednesday, 5: Thursday');
             $table->tinyInteger('week_number');
             $table->tinyInteger('semester_number');
             $table->foreignId('academic_year_id')->constrained('academic_years')->onDelete('cascade');
@@ -41,3 +41,4 @@ return new class extends Migration
         Schema::dropIfExists('calendars');
     }
 };
+

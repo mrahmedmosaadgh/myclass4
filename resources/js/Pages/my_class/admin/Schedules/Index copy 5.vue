@@ -1,288 +1,585 @@
 <template>
     <AppLayout :title="pageTitle">
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6">
-                    <h2 class="text-2xl font-bold mb-6">{{ pageTitle }}</h2>
 
-                    <div class="mb-4" v-if="$page.props.active_copy.length==1">
-                        <PrimaryButton @click="openModal()">Create New Schedule</PrimaryButton>
-                    </div>
-                    <div v-else class="mb-4">
-                        <div class="text-red-600">Please fix active copy status</div>
-                    </div>
 
-                    <!-- Schedule Table -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse">
-                            <thead>
-                                <tr>
-                                    <th class="border bg-gray-50 p-3">Classroom</th>
-                                    <th v-for="period in 8"
-                                        :key="period"
-                                        class="border p-3 min-w-[150px] transition-colors duration-200"
-                                        :class="{ 'hover-column': hoveredCol === period }"
-                                        @mouseover="hoveredCol = period"
-                                        @mouseleave="hoveredCol = null">
-                                        Period {{ period }}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="classroom in groupedSchedules"
-                                    :key="classroom.id"
-                                    :class="{ 'hover-row': hoveredRow === classroom.id }"
-                                    @mouseover="hoveredRow = classroom.id"
-                                    @mouseleave="hoveredRow = null">
+        <details>
 
-                                    <td class="border p-3 font-medium"
-                                        @mouseover="hoveredRow = classroom.id"
-                                        @mouseleave="hoveredRow = null">
-                                        {{ classroom.name }}
-                                        <div class="text-xs text-gray-500">
-                                            Grade: {{ classroom.grade?.name }}
-                                        </div>
-                                    </td>
+<pre>
+    props.options?.classrooms:{{ props.options?.csts[0]?.classroom }}
 
-                                    <td v-for="period in 8"
-                                        :key="`${classroom.id}-${period}`"
-                                        class="border p-2 relative h-[120px] transition-all duration-200"
-                                        :class="{
-                                            'hover-column': hoveredCol === period,
-                                            'hover-row': hoveredRow === classroom.id,
-                                            'hover-cell': hoveredCell.row === classroom.id && hoveredCell.col === period
-                                        }"
-                                        @mouseover="setHoveredCell(classroom.id, period)"
-                                        @mouseleave="clearHoveredCell()">
 
-                                        <div v-if="findSchedule(classroom.id, period)"
-                                             class="h-full p-2 rounded border"
-                                             :class="getScheduleCardColor(findSchedule(classroom.id, period))">
-                                            <div class="flex flex-col h-full">
-                                                <span class="font-medium text-sm">
-                                                    {{ findSchedule(classroom.id, period).subject?.name }}
-                                                </span>
-                                                <span class="text-xs text-gray-600">
-                                                    {{ findSchedule(classroom.id, period).teacher?.name }}
-                                                </span>
-                                                <span v-if="findSchedule(classroom.id, period).place"
-                                                      class="text-xs text-gray-500">
-                                                    {{ findSchedule(classroom.id, period).place }}
-                                                </span>
-                                                <button @click="openModal(findSchedule(classroom.id, period))"
-                                                        class="mt-auto text-xs text-blue-600 hover:text-blue-800 text-right">
-                                                    Edit
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div v-else
-                                             class="h-full flex items-center justify-center border border-dashed border-gray-300 rounded cursor-pointer hover:bg-gray-50"
-                                             @click="openModal(null, { classroom_id: classroom.id, period: period })">
-                                            <span class="text-gray-400 text-sm">+ Add Schedule</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+</pre>
+</details>
+<!-- <CardComponent2></CardComponent2> -->
+
+<details>
+
+    <div class="p-0 flex flex-wrap justify-center">
+
+        <RadioButtonGroup
+        v-model="my_records_filtered_selected"
+        name="officeType"
+        my_class="flex flex-wrap justify-center gap-1"
+        :options="my_records_filtered"
+        />
+        <!-- disabled="disabled" -->
+    </div>
+</details>
+        <details>
+
+            <pre>
+                props.records:{{ props.records2 }}
+
+            </pre>
+        </details>
+        <!-- Filters Section -->
+        <div class="mb-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FilterSelectV2
+                    v-model="filters.school"
+                    v-model:object="filters.school_object"
+                    :options="$page.props.auth.user.school"
+                    value-key="id"
+                    :label-key="['name', 'hr.name']"
+                    placeholder="Select School"
+                    label-separator=" - "
+                    :default-selected-index="0"
+                    :label_only="false"
+                />
+
+                <FilterSelectV2
+                    v-model="filters.classroom"
+                    v-model:object="filters.classroom_object"
+                    :options="$page.props.auth.user.classroom"
+                    value-key="id"
+                    :label-key="['name']"
+                    placeholder="Select Classroom"
+                />
+
+                <FilterSelectV2
+                    v-model="filters.schedule"
+                    v-model:object="filters.schedule_object"
+                    :options="$page.props.auth.user.schedule"
+                    value-key="id"
+                    :label-key="['cst.classroom_name', 'cst.subject_name', 'cst.teacher_name']"
+                    placeholder="Select Schedule"
+                />
             </div>
         </div>
 
-        <FormModal
+        <!-- Schedule Table -->
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                            Classroom
+                        </th>
+                        <template v-for="day in days" :key="day">
+                            <th :colspan="8" class="px-4 py-2 text-center text-sm font-medium text-gray-700 border-l">
+                                {{ day.name }}
+                            </th>
+                        </template>
+
+
+                    </tr>
+                    <tr>
+                        <th></th> <!-- Empty cell for classroom column -->
+                        <template v-for="day in days" :key="`periods-${day}`">
+                            <th v-for="period in periods"
+                                :key="`${day}-${period}`"
+                                class="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase border-l first:border-l-0">
+                                {{ period }}
+                            </th>
+                        </template>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr v-for="classroom in groupedSchedules" :key="classroom.id">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 border-r">
+                            {{ classroom.name }}
+                        </td>
+                        <template v-for="day in days" :key="`${classroom.id}-${day}`">
+                            <td v-for="period in periods"
+                                :key="`${classroom.id}-${day}-${period}`"
+                                class="px-2 py-2 border-l first:border-l-0">
+                                <div class="p-0"
+
+                                >
+                                <!-- :style="`background-color: ${getSessionFromCache(classroom.id, day, period)?.color_bg};color:${getSessionFromCache(classroom.id, day, period)?.color_text}`" -->
+
+
+                                <Dropdown2 width="56" align="left"  :auto-hide="true">
+    <template #trigger>
+        <!-- <button class="px-4 py-2 bg-blue-500 text-white rounded">
+            Open Menu
+        </button> -->
+        <button
+                                        @click="filter_sessions_by_classroom(classroom.id, day, period)"
+                                        class="px-2 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded">
+                                            filter
+                                        </button>
+    </template>
+    <template #content>
+        <div class="py-1">
+
+            <RadioButtonGroup class="scale-75 "
+        v-model="my_records_filtered_selected"
+        name="officeType"
+        my_class="flex flex-wrap justify-center gap-1"
+        :options="my_records_filtered"
+        />
+
+
+        </div>
+    </template>
+</Dropdown2>
+
+
+
+
+                                <!-- <details v-if="getSessionFromCache(classroom.id, day, period)">
+                                </details> -->
+                                <!-- {{ getSessionFromCache(classroom.id, day, period) }} -->
+                               <!-- {{ classroom }} v-show="my_records_filtered_selected"-->
+                               <card2
+                               v-show="my_records_filtered_selected"
+  :option="my_records_filtered_selected"
+  name="radioName"
+  my_class="custom-class"
+  @set_data="setSelectedSession"
+/>
+<!-- {{ filter_sessions_by_classroom(classroom.id, day, period) }} -->
+                                    <ScheduleCell v-show="my_records_filtered_selected"
+                                    :schedule="getSessionFromCache(classroom.id, day, period)"
+                                    @dblclick="handleScheduleClick($event, day, period)"
+                                    @add="handleAddSchedule(classroom.id, day, period)"
+                                    @delete="handleDelete"
+                                    />
+                                </div>
+                            </td>
+                        </template>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Schedule Modal -->
+        <DialogModal_8
+            v-if="modalOpen"
             :show="modalOpen"
-            :title="modelName"
+            :title="editing ? 'Edit Schedule' : 'Add New Schedule'"
             :fields="formFields"
-            :editing="editing"
-            @close="closeModal"
+            :formData="editing"
+            @close="handleModalClose"
             @submitted="handleSubmit"
         />
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import axios from 'axios';
+import { ref, computed, watch } from 'vue';
+import { toast } from 'vue3-toastify';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import Pagination from '@/Components/Pagination.vue';
-import DataTable from '@/Components/Common/DataTable.vue';
-import FormModal from '@/Components/Common/FormModal.vue';
-import CardComponent from './CardComponent.vue';
-import CardComponent2 from './CardComponent2.vue';
+import DialogModal_8 from './DialogModal_8.vue';
+import CardComponent2 from './CardComponent.vue';
+// resources/js/Pages/my_class/admin/Schedules/CardComponent2.vue
+import ScheduleCell from '@/Components/Schedule/ScheduleCell.vue';
+import RadioButtonGroup from './RadioButtonGroup.vue';
+import FilterSelectV2 from '@/Components/FilterSelectV2.vue';
+import NameAbbreviator from './NameAbbreviator2.vue';
+import Dropdown2 from './Dropdown2.vue';
+import card2 from './card2.vue';
+// import DropdownLink from '@/Components/DropdownLink.vue';
 
-const props = defineProps({
-    records: Object,
-    options: Object,
-});
+import axios from 'axios';
 
-const baseUrl = '/admin/schedules';
-const pageTitle = 'Schedule Management';
-const modelName = 'Schedule';
 
-const modalOpen = ref(false);
-const editing = ref(null);
-const submitting = ref(false);
-const items = ref(props.records?.data || []);
-const pagination = ref(props.records?.links || null);
 
-const tableColumns = [
-    { key: 'copy.name', label: 'Copy' },
-    { key: 'school.name', label: 'School' },
-    { key: 'grade.name', label: 'Grade' },
-    { key: 'classroom.name', label: 'Classroom' },
-    { key: 'subject.name', label: 'Subject' },
-    { key: 'teacher.name', label: 'Teacher' },
-    { key: 'day', label: 'Day' },
-    { key: 'period', label: 'Period' },
-    { key: 'active', label: 'Active', type: 'status' }
-];
 
-const formFields = computed(() => [
-    {
-        name: 'copy_id',
-        label: 'Copy',
-        type: 'select',
-        required: true,
-        options: props.options?.copies?.map(item => ({
-            value: item.id,
-            label: item.name
-        })) || []
-    },
-    {
-        name: 'school_id',
-        label: 'School',
-        type: 'select',
-        required: true,
-        options: props.options?.schools?.map(item => ({
-            value: item.id,
-            label: item.name
-        })) || []
-    },
-    {
-        name: 'grade_id',
-        label: 'Grade',
-        type: 'select',
-        required: true,
-        options: props.options?.grades?.map(item => ({
-            value: item.id,
-            label: item.name
-        })) || []
-    },
-    {
-        name: 'classroom_id',
-        label: 'Classroom',
-        type: 'select',
-        required: true,
-        options: props.options?.classrooms?.map(item => ({
-            value: item.id,
-            label: item.name
-        })) || []
-    },
-    {
-        name: 'subject_id',
-        label: 'Subject',
-        type: 'select',
-        required: true,
-        options: props.options?.subjects?.map(item => ({
-            value: item.id,
-            label: item.name
-        })) || []
-    },
-    {
-        name: 'teacher_id',
-        label: 'Teacher',
-        type: 'select',
-        required: true,
-        options: props.options?.teachers?.map(item => ({
-            value: item.id,
-            label: item.name
-        })) || []
-    },
-    {
-        name: 'day',
-        label: 'Day',
-        type: 'select',
-        options: [
-            { value: 1, label: 'Monday' },
-            { value: 2, label: 'Tuesday' },
-            { value: 3, label: 'Wednesday' },
-            { value: 4, label: 'Thursday' },
-            { value: 5, label: 'Friday' },
-            { value: 6, label: 'Saturday' },
-            { value: 7, label: 'Sunday' }
-        ]
-    },
-    {
-        name: 'period',
-        label: 'Period',
-        type: 'number',
-        min: -2
-    },
-    {
-        name: 'period_order',
-        label: 'period order',
-        type: 'number',
-        min: 1
-    },
-    {
-        name: 'name',
-        label: 'Name',
-        type: 'text'
-    },
-    {
-        name: 'place',
-        label: 'Place',
-        type: 'text'
-    },
-    {
-        name: 'color_custom',
-        label: 'Custom Color',
-        type: 'color'
-    },
-    {
-        name: 'active',
-        label: 'Status',
-        type: 'select',
-        options: [
-            { value: true, label: 'Active' },
-            { value: false, label: 'Inactive' }
-        ]
-    },
-    {
-        name: 'notes',
-        label: 'Notes',
-        type: 'textarea'
-    }
+
+const selectedType  =ref('Cozy')
+const my_records_filtered_selected  =ref(false)
+const options = ref([
+  { value: 'Cozy2', label: 'Cozy'  },
+//   { value: 'Green', label: 'Green'  },
 ]);
 
-const groupedSchedules = computed(() => {
-    const classrooms = props.options?.classrooms || [];
-    return classrooms.map(classroom => ({
-        ...classroom,
-        grade: props.options?.grades?.find(g => g.id === classroom.grade_id),
-        schedules: items.value.filter(schedule => schedule.classroom_id === classroom.id)
-    }));
+
+
+
+
+// Define props first
+const props = defineProps({
+    records: {
+        type: Object,
+        default: () => ({ data: [] })
+    },
+    records2: {
+        type: Object,
+        default: () => ({ data: [] })
+    },
+    options: {
+        type: Object,
+        default: () => ({})
+    },
+    periodDetails: {
+        type: Array,
+        default: () => []
+    }
+});
+const my_records=ref(props?.records)
+const my_records_filtered=ref(props?.records)
+
+console.log('Props received:', {
+    records: props.records,
+    options: props.options,
+    periodDetails: props.periodDetails
 });
 
-const findSchedule = (classroomId, period) => {
-    return props.records.data.find(schedule =>
-        schedule.classroom_id === classroomId &&
-        schedule.period_order === period
-    );
+// Constants
+const days = [
+    { name: 'Sunday', number: 1 },
+    { name: 'Monday', number: 2 },
+    { name: 'Tuesday', number: 3 },
+    { name: 'Wednesday', number: 4 },
+    { name: 'Thursday', number: 5 },
+    // { name: 'Friday', number: 5 }
+];
+const periods = Array.from({ length: 8 }, (_, i) => i + 1);
+const baseUrl = '/admin/schedules';
+const  selected_session_to_update = ref(false);
+
+const pageTitle = 'Schedule Management';
+const periodTimes = {
+    1: '07:30 - 08:15',
+    2: '08:15 - 09:00',
+    3: '09:00 - 09:45',
+    4: '10:00 - 10:45',
+    5: '10:45 - 11:30',
+    6: '11:30 - 12:15',
+    7: '12:45 - 13:30',
+    8: '13:30 - 14:15'
 };
 
-const getScheduleCardColor = (schedule) => {
-    if (!schedule) return '';
+// Reactive references
+const records = ref(props.records || []);
+const modalOpen = ref(false);
+const selected_cell_data = ref({
+    day: null,
+    period_number: null
+});
+const editing = ref(null);
+const submitting = ref(false);
+const filters = ref({
+    school: null,
+    school_object: {},
+    classroom: null,
+    classroom_object: {},
+    schedule: null,
+    schedule_object: {}
+});
+
+// Watch for props changes
+watch(() => props.records, (newRecords) => {
+    records.value = newRecords;
+}, { deep: true });
+
+// Computed properties
+const groupedSchedules = computed(() => {
+    console.log('CSTs from options:', props.options?.csts);
+    const csts = props.options?.csts || [];
+    const uniqueClassrooms = [...new Set(csts.map(cst => cst.classroom.id))]
+        .map(classroomId => {
+            const cst = csts.find(cst => cst.classroom.id === classroomId);
+            return {
+                id: cst.classroom.id,
+                name: cst.classroom.name,
+                grade: cst.classroom.grade,
+
+            };
+        });
+
+    console.log('Processed classrooms:', uniqueClassrooms);
+    return uniqueClassrooms;
+});
+
+// Add these computed properties
+const scheduleMatrix = computed(() => {
+    const matrix = {};
+
+    // Initialize empty matrix
+    groupedSchedules.value.forEach(classroom => {
+        matrix[classroom.id] = {};
+        for (let day = 1; day <= 5; day++) {
+            matrix[classroom.id][day] = {};
+            for (let period = 1; period <= 8; period++) {
+                matrix[classroom.id][day][period] = null;
+            }
+        }
+    });
+
+    // Fill in the schedules
+    props.records.forEach(schedule => {
+        const classroomId = schedule.cst.classroom.id;
+        if (matrix[classroomId]) {
+            matrix[classroomId][schedule.day][schedule.period_number] = {
+                id: schedule.id,
+                subject: schedule.cst.subject.name,
+                teacher: schedule.cst.teacher.name,
+                is_disabled: !schedule.active,
+                color_bg: schedule.cst.subject.color_bg,
+                color_text: schedule.cst.subject.color_text
+
+
+            };
+        }
+    });
+
+    return matrix;
+});
+
+// Add this computed property
+const scheduleCache = computed(() => {
+    if (!props.records2) return {};
+
+    const cache = {};
+    props.records2.forEach(schedule => {
+        const key = `${schedule.cst?.classroom?.id}-${schedule.day}-${schedule.period_number}`;
+        cache[key] = {
+            subject: schedule.cst?.subject?.name,
+            teacher: schedule.cst?.teacher?.name,
+            color_bg: schedule.cst?.subject?.color_bg,
+            color_text: schedule.cst?.subject?.color_text,
+            cst: schedule.cst,
+            schedule: schedule ,
+
+        };
+    });
+    return cache;
+});
+
+// Methods
+
+const getSessionFromCache = (classroomId, day, period) => {
+    // const dayNumber = days.indexOf(day) + 1;
+    return scheduleCache.value[`${classroomId}-${day.number}-${period}`] || null;
+};
+const setSelectedSession=(event) => {
+    selected_session_to_update.value = event;
+};
+
+const filter_sessions_by_classroom = (classroomId, day, period) => {
+console.log(day, period);
+
+    selected_cell_data.value.day=day.number
+    selected_cell_data.value.period_number=period
+
+    my_records_filtered.value = props.records?.filter(schedule =>
+        schedule.cst?.classroom?.id === classroomId
+    );
+
+    console.log('Filtered records:', my_records_filtered.value); // For debugging
+    return my_records_filtered.value;
+};
+
+
+
+
+
+const getScheduleForCell = (classroomId, day, period) => {
+    // const dayNumber = days.indexOf(day) + 1;
+
+    const schedule = records.value.find(schedule =>
+        schedule.cst?.classroom?.id === classroomId &&
+        schedule.period_number === period &&
+        schedule.day === day.number &&
+        schedule.active === true
+    );
+
+    if (!schedule) return null;
+
     return {
-        'bg-blue-50': schedule.color_custom === '#blue',
-        'bg-green-50': schedule.color_custom === '#green',
-        // Add more color classes as needed
+        id: schedule.id,
+        cst_id: schedule.cst_id,
+        day: schedule.day.number,
+        period_number: schedule.period_number,
+        subject: schedule.cst?.subject?.name,
+        teacher: schedule.cst?.teacher?.name,
+        is_disabled: !schedule.active,
+        cst: schedule.cst
     };
 };
 
-const openModal = (record = null) => {
-    editing.value = record ? { ...record } : null;
+const handleScheduleClick = (schedule, day, period) => {
+    // const dayNumber = days.indexOf(day) + 1;
+
+    if (!schedule) {
+        // Handle new schedule creation
+        editing.value = {
+            day: day.number,
+            period_number: period,
+            school_id: props.options.csts?.[0]?.classroom?.school_id,
+            copy_id: props.options.activeCopy?.id,
+            active: true
+        };
+    } else {
+        // Handle existing schedule edit
+        editing.value = {
+            ...schedule,
+            day: day.number,
+            period_number: period,
+            school_id: schedule.cst?.classroom?.school_id,
+            copy_id: props.options.activeCopy?.id
+        };
+    }
+
+    selected_cell_data.value = {
+        day: day.number,
+        period_number: period
+    };
+
+    modalOpen.value = true;
+};
+
+const handleAddSchedule = (classroomId, day, period) => {
+    const cst = props.options.csts.find(cst => cst.classroom.id === classroomId);
+    if (!cst) return;
+
+    editing.value = {
+         id: null,
+        cst_id: cst.id,
+        day: days.indexOf(day) + 1,
+        period_number: period,
+        school_id: cst.classroom.school_id,
+        copy_id: props.options.activeCopy?.id,
+        active: true
+    };
+
+    modalOpen.value = true;
+};
+
+const handleModalClose = () => {
+    modalOpen.value = false;
+    editing.value = null;
+    submitting.value = false;
+};
+
+const refreshData = () => {
+    axios.get(baseUrl)
+        .then(response => {
+            if (response.data.records) {
+                records.value = response.data.records;
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing data:', error);
+            toast.error('Failed to refresh schedule data');
+        });
+};
+
+const handleSubmit = ({ form, onSuccess, onError }) => {
+    if (submitting.value) return;
+    submitting.value = true;
+
+    const formData = {
+        ...form,
+        day: selected_cell_data.value.day,
+        period_number: selected_cell_data.value.period_number,
+        school_id: editing.value.school_id,
+        copy_id: editing.value.copy_id,
+        active: editing.value.active ?? true
+    };
+
+    const url = formData.id ? `${baseUrl}/${formData.id}` : baseUrl;
+    const method = formData.id ? 'put' : 'post';
+
+    axios[method]('/admin/schedule/update2', formData)
+        .then(response => {
+            // Update the local records immediately
+            if (method === 'post') {
+                records.value = [...records.value, response.data];
+            } else {
+                records.value = records.value.map(record =>
+                    record.id === editing.value.id ? response.data : record
+                );
+            }
+            handleModalClose();
+            onSuccess();
+            toast.success(`Schedule ${editing.value.id ? 'updated' : 'created'} successfully`);
+        })
+        .catch(error => {
+            console.error('Error submitting form:', error);
+            const errorMessage = error.response?.data?.message || 'An unexpected error occurred';
+            onError(error.response?.data?.errors || { error: [errorMessage] });
+            toast.error(errorMessage);
+        })
+        .finally(() => {
+            submitting.value = false;
+        });
+};
+
+const formFields = computed(() => [
+    {
+        name: 'cst_id',
+        label: 'Class-Subject-Teacher',
+        type: 'select',
+        required: true,
+        options: props.options?.csts?.map(item => ({
+            value: item.id,
+            label: `${item.classroom_name} - ${item.subject_name} - ${item.teacher_name}`
+        })) || []
+    },
+    // {
+    //     name: 'day',
+    //     label: 'Day',
+    //     type: 'select',
+    //     required: true,
+    //     options: days.map((day, index) => ({
+    //         value: index + 1,
+    //         label: day
+    //     })),
+    //     disabled: true // Make it read-only
+    // },
+    // {
+    //     name: 'period_number',
+    //     label: 'Period',
+    //     type: 'select',
+    //     required: true,
+    //     options: periods.map(period => ({
+    //         value: period,
+    //         label: `Period ${period} (${periodTimes[period]})`
+    //     })),
+    //     disabled: true // Make it read-only
+    // }
+]);
+
+const getScheduleCardColor = (schedule) => {
+    if (!schedule || !schedule.cst) return '';
+
+    return {
+        'bg-blue-50': schedule.cst.subject?.type === 'regular',
+        'bg-green-50': schedule.cst.subject?.type === 'special',
+        // Add more color conditions as needed
+    };
+};
+
+const openModal = (existingSchedule = null, defaultData = {}) => {
+    if (existingSchedule) {
+        // Editing existing schedule
+        editing.value = {
+            cst_id: existingSchedule.cst_id,
+            id: existingSchedule.id
+        };
+    } else {
+        // Creating new schedule
+        editing.value = {
+            cst_id: null,
+            school_id: selected_school_object.value?.id,
+            period_number: defaultData.period_number,
+            day: defaultData.day
+        };
+    }
     modalOpen.value = true;
 };
 
@@ -292,67 +589,20 @@ const closeModal = () => {
     submitting.value = false;
 };
 
-const handleSubmit = async ({ form, onSuccess, onError }) => {
-    if (submitting.value) return;
-
-    submitting.value = true;
-    const id = editing.value?.id;
-
-    try {
-        if (id) {
-            // Update existing record
-            await axios.post(`${baseUrl}/${id}`, {
-                _method: 'PUT',
-                ...form
-            });
-        } else {
-            // Create new record
-            await axios.post(baseUrl, form);
-        }
-
-        onSuccess();
-        closeModal();
-        refreshData();
-    } catch (error) {
-        if (error.response?.data?.errors) {
-            onError(error.response.data.errors);
-        } else {
-            onError({ error: ['An unexpected error occurred'] });
-        }
-    } finally {
-        submitting.value = false;
-    }
-};
-
-const deleteRecord = (record) => {
-    if (!confirm('Are you sure you want to delete this record?')) return;
-
-    axios.delete(`${baseUrl}/${record.id}`)
+const handleDelete = (scheduleId) => {
+    axios.delete(`${baseUrl}/${scheduleId}`)
         .then(() => {
+            // Update local records immediately
+            records.value = records.value.filter(record => record.id !== scheduleId);
+            toast.success('Schedule deleted successfully');
+
+            // Refresh data to ensure synchronization
             refreshData();
         })
         .catch(error => {
-            let errorMessage = 'An error occurred while deleting the record.';
-
-            if (error.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            }
-
-            alert(errorMessage);
-        });
-};
-
-const refreshData = () => {
-    axios.get(baseUrl)
-        .then(response => {
-            if (response.data.records) {
-                items.value = response.data.records.data;
-                pagination.value = response.data.records.links;
-            }
-        })
-        .catch(error => {
-            console.error('Error refreshing data:', error);
-            alert('An error occurred while refreshing the data.');
+            console.error('Error deleting schedule:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to delete schedule';
+            toast.error(errorMessage);
         });
 };
 
@@ -360,28 +610,44 @@ const handleSchedulePlacement = (classroomId, period) => {
     const formData = {
         ...form.value,
         classroom_id: classroomId,
-        period_order: period,
+        period_number: period,
         copy_id: activeCopy.value.id,
     };
 
-    axios.post(baseUrl, formData)
+    // Find existing schedule for this slot
+    const existingSchedule = records.value.find(
+        schedule => schedule.classroom_id === classroomId &&
+                   schedule.period_number === period
+    );
+
+    const url = existingSchedule
+        ? `${baseUrl}/${existingSchedule.id}`
+        : baseUrl;
+
+    const method = existingSchedule ? 'put' : 'post';
+
+    axios[method](url, formData)
         .then(response => {
-            refreshData();
-            // Show success message
-            toast.success('Schedule placed successfully');
+            if (existingSchedule) {
+                // Update existing record in the array
+                records.value = records.value.map(record =>
+                    record.id === existingSchedule.id ? response.data : record
+                );
+                toast.success('Schedule updated successfully');
+            } else {
+                // Add new record to the array
+                records.value = [...records.value, response.data];
+                toast.success('Schedule placed successfully');
+            }
         })
         .catch(error => {
-            let errorMessage = 'Failed to place schedule';
-
+            let errorMessage = `Failed to ${existingSchedule ? 'update' : 'place'} schedule`;
             if (error.response?.data?.message) {
                 errorMessage = error.response.data.message;
             }
-
-            // Show error message
             toast.error(errorMessage);
 
             if (error.response?.data?.conflict) {
-                // Optionally show conflict details
                 console.log('Conflict details:', error.response.data.conflict);
             }
         });
@@ -391,7 +657,7 @@ const handleSchedulePlacement = (classroomId, period) => {
 const getAvailablePeriods = (classroomId) => {
     const occupiedPeriods = items.value
         .filter(schedule => schedule.classroom_id === classroomId)
-        .map(schedule => schedule.period_order);
+        .map(schedule => schedule.period_number);
 
     // Assuming 8 periods per day
     return Array.from({length: 8}, (_, i) => i + 1)
@@ -400,9 +666,9 @@ const getAvailablePeriods = (classroomId) => {
 
 // Add this to your template where you want to show available slots
 const isSlotAvailable = (classroomId, period) => {
-    return !props.records.data.some(schedule =>
+    return !props.records.some(schedule =>
         schedule.classroom_id === classroomId &&
-        schedule.period_order === period
+        schedule.period_number === period
     );
 };
 
@@ -422,69 +688,75 @@ const clearHoveredCell = () => {
     hoveredRow.value = null;
     hoveredCol.value = null;
 };
+
+// Add these methods for better hover control
+const setHoveredRow = (id) => {
+    hoveredRow.value = id;
+};
+
+const clearHoveredRow = () => {
+    hoveredRow.value = null;
+};
+
+// Add these refs at the top of your script setup
+const selectedCstIndex = ref(null);
+const defaultScheduleData = computed(() => ({
+    school_id: selected_school_object.value?.id,
+    period_number: null,
+    day: null,
+
+    cst_id: null,
+    place: '',
+    active: true,
+    notes: ''
+}));
+
+const available_sessions = computed(() => {
+    return props.records2?.filter(session =>
+        !getSessionFromCache(session.cst?.classroom?.id, session.day, session.period_number)
+    ) || [];
+});
+
+const selectSession = (classroomId, day, period, option) => {
+    // Handle the selection here
+    console.log('Selected:', { classroomId, day, period, option });
+    // You might want to emit an event or update some state
+};
 </script>
 
 <style scoped>
-.border {
-    @apply border-gray-200;
+.border-l {
+    border-left: 1px solid #e5e7eb;
 }
-
-/* Base transitions */
-td, th {
-    transition: all 0.3s ease;
-    position: relative;
+.border-r {
+    border-right: 1px solid #e5e7eb;
 }
-
-/* Column hover effect */
-.hover-column,
-td:nth-child(n+2):nth-child(-n+9):has(~ tr td.hover-column) {
-    @apply bg-gradient-to-b from-indigo-50/80 to-blue-50/80;
-    box-shadow: inset 0 0 12px rgba(99, 102, 241, 0.05);
-}
-
-/* Row hover effect */
-.hover-row {
-    @apply bg-gradient-to-r from-purple-50/80 to-pink-50/80;
-    box-shadow: inset 0 0 12px rgba(219, 39, 119, 0.05);
-}
-
-/* Cell hover effect */
-.hover-cell {
-    @apply bg-gradient-to-br from-cyan-50 to-blue-50;
-    box-shadow:
-        inset 0 0 15px rgba(6, 182, 212, 0.1),
-        0 0 10px rgba(6, 182, 212, 0.1);
-    transform: scale(1.02);
-    z-index: 10;
-}
-
-/* Table styling */
-table {
-    @apply bg-gradient-to-br from-white to-gray-50;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-/* Header styling */
-th {
-    @apply bg-gradient-to-b from-gray-50 to-gray-100;
-    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-}
-
-/* Schedule card hover effect */
-.h-full.p-2.rounded.border {
-    transition: all 0.3s ease;
-}
-
-.h-full.p-2.rounded.border:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Column highlight helper class */
-[data-highlight-col="true"] {
-    @apply bg-gradient-to-b from-indigo-50/80 to-blue-50/80 !important;
+.first\:border-l-0:first-child {
+    border-left: 0;
 }
 </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

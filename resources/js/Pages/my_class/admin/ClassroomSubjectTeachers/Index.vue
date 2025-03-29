@@ -36,32 +36,90 @@
             </div>
         </div>
 
-        <FormModal
-            :show="modalOpen"
-            :title="modelName"
-            :fields="formFields"
-            :editing="editing"
-            @close="closeModal"
-            @submitted="handleSubmit"
-        />
+
+    <DialogModal_7
+        :show="modalOpen"
+        :title="editing ? 'Edit Assignment' : 'Add New Assignment'"
+        :fields="formFields"
+        :editing="!!editing"
+        @close="closeModal"
+        @submitted="handleSubmit"
+    >
+        <template #title>
+            {{ editing ? 'Edit Assignment' : 'Add New Assignment' }}
+        </template>
+
+        <template #content>
+            <div class="space-y-4">
+                <div v-for="field in formFields" :key="field.name" class="grid grid-cols-1 gap-2">
+                    <label :for="field.name" class="block text-sm font-medium text-gray-700">
+                        {{ field.label }}
+                    </label>
+                    <select
+                        v-if="field.type === 'select'"
+                        :id="field.name"
+                        v-model="form[field.name]"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                        <option value="">Select {{ field.label }}</option>
+                        <option
+                            v-for="option in field.options"
+                            :key="option.value"
+                            :value="option.value"
+                        >
+                            {{ option.label }}
+                        </option>
+                    </select>
+                    <input
+                        v-else
+                        :type="field.type"
+                        :id="field.name"
+                        v-model="form[field.name]"
+                        :min="field.min"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    >
+                </div>
+            </div>
+        </template>
+
+        <template #footer>
+            <SecondaryButton @click="closeModal">
+                Cancel
+            </SecondaryButton>
+            <PrimaryButton class="ml-3" @click="handleSubmit">
+                {{ editing ? 'Update' : 'Create' }}
+            </PrimaryButton>
+        </template>
+    </DialogModal_7>
+
     </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import Pagination from '@/Components/Pagination.vue';
 import DataTable from '@/Components/Common/DataTable.vue';
-import FormModal from '@/Components/Common/FormModal.vue';
+import DialogModal_7 from './DialogModal_7.vue';
 import ImportExcel from '@/Components/Common/ImportExcel.vue';
 import * as XLSX from 'xlsx';
+import NProgress from 'nprogress';
 
 const props = defineProps({
     records: Object,
-    options: Object,
+    options: {
+        type: Object,
+        default: () => ({
+            schools: [],
+            grades: [],
+            classrooms: [],
+            subjects: [],
+            teachers: []
+        })
+    }
 });
 
 const pageTitle = 'Classroom Subject Teachers';
@@ -83,56 +141,46 @@ const tableColumns = [
     { key: 'classes_per_week', label: 'Classes/Week' },
 ];
 
-const formFields = [
+const formFields = computed(() => [
     {
         name: 'school_id',
         label: 'School',
         type: 'select',
         required: true,
-        options: computed(() => props.options?.schools?.map(item => ({
+        options: props.options?.schools?.map(item => ({
             value: item.id,
             label: item.name
-        })) || [])
+        })) || []
     },
-    // {
-    //     name: 'grade_id',
-    //     label: 'Grade',
-    //     type: 'select',
-    //     required: true,
-    //     options: computed(() => props.options?.grades?.map(item => ({
-    //         value: item.id,
-    //         label: item.name
-    //     })) || [])
-    // },
     {
         name: 'classroom_id',
         label: 'Classroom',
         type: 'select',
         required: true,
-        options: computed(() => props.options?.classrooms?.map(item => ({
+        options: props.options?.classrooms?.map(item => ({
             value: item.id,
             label: item.name
-        })) || [])
+        })) || []
     },
     {
         name: 'subject_id',
         label: 'Subject',
         type: 'select',
         required: true,
-        options: computed(() => props.options?.subjects?.map(item => ({
+        options: props.options?.subjects?.map(item => ({
             value: item.id,
             label: item.name
-        })) || [])
+        })) || []
     },
     {
         name: 'teacher_id',
         label: 'Teacher',
         type: 'select',
         required: true,
-        options: computed(() => props.options?.teachers?.map(item => ({
+        options: props.options?.teachers?.map(item => ({
             value: item.id,
             label: item.name
-        })) || [])
+        })) || []
     },
     {
         name: 'classes_per_week',
@@ -141,7 +189,36 @@ const formFields = [
         required: true,
         min: 1
     }
-];
+]);
+
+const form = ref({
+    school_id: '',
+    classroom_id: '',
+    subject_id: '',
+    teacher_id: '',
+    classes_per_week: ''
+});
+
+// Update form when editing
+watch(editing, (newValue) => {
+    if (newValue) {
+        form.value = {
+            school_id: newValue.school_id,
+            classroom_id: newValue.classroom_id,
+            subject_id: newValue.subject_id,
+            teacher_id: newValue.teacher_id,
+            classes_per_week: newValue.classes_per_week
+        };
+    } else {
+        form.value = {
+            school_id: '',
+            classroom_id: '',
+            subject_id: '',
+            teacher_id: '',
+            classes_per_week: ''
+        };
+    }
+});
 
 const openModal = (record = null) => {
     editing.value = record;
@@ -151,35 +228,71 @@ const openModal = (record = null) => {
 const closeModal = () => {
     modalOpen.value = false;
     editing.value = null;
+    // Reset the form
+    form.value = {
+        school_id: '',
+        classroom_id: '',
+        subject_id: '',
+        teacher_id: '',
+        classes_per_week: ''
+    };
 };
 
 const refreshData = () => {
-    router.reload({ only: ['records'] });
+    NProgress.start();
+    router.reload({
+        only: ['records'],
+        preserveScroll: true,
+        preserveState: true
+    })
+        .then(() => {
+            NProgress.done();
+        });
 };
 
-const handleSubmit = async ({ form, onSuccess, onError }) => {
+const handleSubmit = () => {
+    NProgress.start();
     const url = editing.value
         ? `${baseUrl}/${editing.value.id}`
         : baseUrl;
 
-    try {
-        const response = await axios[editing.value ? 'put' : 'post'](url, form);
-        onSuccess();
-        refreshData();
-        closeModal();
-    } catch (error) {
-        onError(error.response.data.errors);
-    }
+    // Use POST and include _method for PUT requests
+    axios.post(url, {
+        ...(editing.value && { _method: 'PUT' }),
+        ...form.value
+    })
+        .then(() => {
+            // First close the modal
+            closeModal();
+            // Then refresh the data
+            refreshData();
+        })
+        .catch(error => {
+            if (error.response?.data?.errors) {
+                console.error(error.response.data.errors);
+            }
+        })
+        .finally(() => {
+            NProgress.done();
+        });
 };
 
 const deleteRecord = async (record) => {
     if (confirm('Are you sure you want to delete this record?')) {
-        await axios.delete(`${baseUrl}/${record.id}`);
-        refreshData();
+        NProgress.start();
+        try {
+            await axios.delete(`${baseUrl}/${record.id}`);
+            refreshData();
+        } catch (error) {
+            console.error('Delete error:', error);
+        } finally {
+            NProgress.done();
+        }
     }
 };
 
 const exportData = () => {
+    NProgress.start();
     try {
         const wsData = [
             ['School', 'Grade', 'Classroom', 'Subject', 'Teacher', 'Classes/Week'],
@@ -202,6 +315,8 @@ const exportData = () => {
     } catch (error) {
         console.error('Export failed:', error);
         alert('Failed to export data');
+    } finally {
+        NProgress.done();
     }
 };
 
@@ -245,3 +360,12 @@ const importColumns = [
     }
 ];
 </script>
+
+
+
+
+
+
+
+
+

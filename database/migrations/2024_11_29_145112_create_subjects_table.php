@@ -21,6 +21,9 @@ return new class extends Migration
             $table->string('notes')->nullable();
 
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
+            $table->string('color_bg',22)->nullable();
+            $table->string('color_text',22)->nullable();
+            // ALTER TABLE `subjects` ADD `color_bg` VARCHAR(20) NULL AFTER `notes`, ADD `color_text` VARCHAR(20) NULL AFTER `color_bg`;
             $table->softDeletes(); // Add this line for soft deletes
             $table->timestamps();
         });

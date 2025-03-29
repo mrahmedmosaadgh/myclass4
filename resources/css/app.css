@@ -5,3 +5,70 @@
 [x-cloak] {
     display: none;
 }
+
+/* NProgress custom styles */
+#nprogress .bar {
+    background: #4f46e5 !important; /* Indigo color, matching your theme */
+    height: 3px !important;
+}
+
+#nprogress .peg {
+    box-shadow: 0 0 10px #4f46e5, 0 0 5px #4f46e5 !important;
+}
+
+#nprogress .spinner-icon {
+    border-top-color: #4f46e5 !important;
+    border-left-color: #4f46e5 !important;
+}
+
+
+
+
+
+
+
+
+/* ======================================= */
+._hiddenRadioInput_u1tst_155 {
+    display: none;
+  }
+._boxRadioButton_19yuc_202 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* gap: 2px; */
+    /* width: 92px;
+    height: 50px; */
+    /* border: 1px solid #dc81507e; */
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color .25s ease, filter .25s ease, transform .25s ease;
+}
+
+/* When radio input is checked */
+input:checked ~ ._boxRadioButton_19yuc_202 {
+    background-color: #2e6d01;
+    color: #fbff01;
+    border-color: transparent;
+
+}
+
+/* When radio input is disabled */
+input:disabled ~ ._boxRadioButton_19yuc_202 {
+    background-color: #0000001a;
+    color: #807e7a;
+    border-color: transparent;
+}
+
+/* Hover state when not checked and not disabled */
+input:not(:checked):not(:disabled) ~ ._boxRadioButton_19yuc_202:hover {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,.2));
+    transform: translateY(-4px);
+    background: #f8e7cf;
+}
+
+/* ======================================= */
+
+
+

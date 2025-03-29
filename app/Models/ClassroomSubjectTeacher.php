@@ -80,7 +80,12 @@ class ClassroomSubjectTeacher extends Model
     {
         return $this->belongsTo(Classroom::class);
     }
-
+    // public function classrooms()
+    // {
+    //     return $this->belongsToMany(Classroom::class, 'classroom_subject_teachers', 'teacher_id', 'classroom_id')
+    //         ->withPivot(['subject_id', 'classes_per_week', 'data'])
+    //         ->withTimestamps();
+    // }
     public function subject()
     {
         return $this->belongsTo(Subject::class);
@@ -110,6 +115,18 @@ class ClassroomSubjectTeacher extends Model
                     // Auto-set grade ID from classroom
                     $classroomSubjectTeacher->grade_id = $classroom->grade_id;
 
+                    // Set random color if color_custom is null
+                    if (!isset($classroomSubjectTeacher->color_custom)) {
+                        $colors = ['blue', 'green', 'purple', 'orange', 'pink', 'teal', 'indigo', 'red', 'yellow', 'cyan'];
+                        $randomColor = $colors[array_rand($colors)];
+
+                        if (!is_array($classroomSubjectTeacher->data)) {
+                            $classroomSubjectTeacher->data = [];
+                        }
+
+                        $classroomSubjectTeacher->data['color_custom'] = $randomColor;
+                    }
+
                 } catch (ModelNotFoundException $e) {
                     throw new \Exception("Invalid classroom selected");
                 }
@@ -118,5 +135,7 @@ class ClassroomSubjectTeacher extends Model
 
     }
 }
+
+
 
 

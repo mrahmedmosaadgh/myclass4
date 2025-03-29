@@ -51,6 +51,13 @@ export const menuGroups = [
                 permission: 'admin_manage_schedule'
             },
             {
+                name: 'schedule-copies',
+                route: 'admin.schedule-copies.index',
+                permission: 'admin_manage_schedule'
+            },
+
+
+            {
                 name: 'Calendar',
                 route: 'admin.calendar.index',
                 permission: 'admin_manage_calendar'

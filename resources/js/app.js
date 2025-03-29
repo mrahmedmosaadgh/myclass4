@@ -3,7 +3,7 @@ import '../css/app.css';
 import 'vue3-toastify/dist/index.css';
 
 import { createApp, h } from 'vue';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from 'ziggy-js';
 import { createI18n } from 'vue-i18n';
@@ -57,6 +57,16 @@ createInertiaApp({
         color: 'blue',
     },
 });
+
+// Add these event listeners
+router.on('start', () => NProgress.start());
+router.on('finish', () => NProgress.done());
+router.on('error', () => NProgress.done());
+
+
+
+
+
 
 
 

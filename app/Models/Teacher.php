@@ -90,9 +90,43 @@ class Teacher extends Model
         return $this->belongsTo(School::class);
     }
 
+    public function schoolsold()
+    {
+        return $this->belongsTo(School::class)->orWhereIn('id', $this->school_extra_ids ?? []);
+    }
+    public function schools()
+    {
+        $primarySchool = $this->belongsTo(School::class, 'school_id')->with(['hr'])->first();
+        $extraSchools = School::whereIn('id', $this->school_extra_ids ?? [])->with(['hr'])->get();
+
+        if ($primarySchool) {
+            return collect([$primarySchool])->merge($extraSchools);
+        } else {
+            return $extraSchools;
+        }
+
+    }
+    // Alternative approach using a custom query scope
+    public function scopeWithAllSchools($query)
+    {
+        return $query->with(['school' => function($query) {
+            $query->orWhereIn('id', $this->school_extra_ids ?? []);
+        }]);
+    }
+
+    // Optional: Add an accessor to get all school names
+    public function getSchoolNamesAttribute()
+    {
+        return School::where('id', $this->school_id)
+                    ->orWhereIn('id', $this->school_extra_ids ?? [])
+                    ->pluck('name');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 }
+
+
 

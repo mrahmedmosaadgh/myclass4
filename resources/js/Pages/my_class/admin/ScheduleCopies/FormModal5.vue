@@ -39,35 +39,49 @@ const props = defineProps({
         type: String,
         default: '2xl'
     },
-    loading: {
-        type: Boolean,
-        default: false
+    options: {
+        type: Object,
+        default: () => ({
+            schools: [],
+            academicYears: [],
+            semesters: [],
+            statuses: [
+                { id: 'draft', name: 'Draft' },
+                { id: 'active', name: 'Active' },
+                { id: 'archived', name: 'Archived' }
+            ]
+        })
     }
 });
 
-const localForm = ref({
-    school_id: props.form.school_id || '',
-    name: props.form.name || '',
-    description: props.form.description || '',
-    active: props.form.active ?? true,
-    copy_date: props.form.copy_date || null,
-    academic_year_id: props.form.academic_year_id || '',
-    semester_id: props.form.semester_id || '',
-    week_number: props.form.week_number || null,
-    status: props.form.status || 'draft',
-    metadata: props.form.metadata || null,
-    notes: props.form.notes || ''
+const form = ref({
+    school_id: '',
+    name: '',
+    description: '',
+    active: true,
+    copy_date: null,
+    academic_year_id: '',
+    semester_id: '',
+    week_number: null,
+    status: 'draft',
+    metadata: null,
+    notes: ''
 });
 
-// Initialize with props.form data when component mounts
-onMounted(() => {
-    localForm.value = { ...props.form };
-});
+// Initialize local form data
+const localForm = ref({ ...props.form });
 
-// Update form when props change
+// Watch for form prop changes
 watch(() => props.form, (newValue) => {
     localForm.value = { ...newValue };
 }, { deep: true });
+
+// Watch for show prop changes to reset form
+watch(() => props.show, (newValue) => {
+    if (newValue) {
+        localForm.value = { ...props.form };
+    }
+});
 
 const updateFormValue = (fieldName, value) => {
     localForm.value[fieldName] = value;
@@ -75,16 +89,8 @@ const updateFormValue = (fieldName, value) => {
 };
 
 const handleSubmit = () => {
-    // Ensure all required fields are included
     emit('submit', {
-        form: {
-            ...localForm.value,
-            school_id: localForm.value.school_id || '',
-            name: localForm.value.name || '',
-            academic_year_id: localForm.value.academic_year_id || '',
-            status: localForm.value.status || 'draft',
-            active: localForm.value.active ?? true
-        },
+        form: localForm.value,
         onSuccess: () => {
             closeModal();
         },
@@ -123,14 +129,42 @@ const maxWidthClass = computed(() => {
 });
 
 const normalizedFields = computed(() => {
-    return props.fields.map(field => ({
-        type: 'text',
-        required: false,
-        placeholder: '',
-        ...field,
-        options: Array.isArray(field.options) ? field.options :
-                (field.options?.value || [])
-    }));
+    return props.fields.map(field => {
+        let options = field.options;
+
+        // Handle special cases for select fields
+        if (field.type === 'select') {
+            switch (field.name) {
+                case 'status':
+                    options = [
+                        { value: 'draft', label: 'Draft' },
+                        { value: 'active', label: 'Active' },
+                        { value: 'archived', label: 'Archived' }
+                    ];
+                    break;
+                case 'school_id':
+                    options = props.options.schools.map(school => ({
+                        value: school.id,
+                        label: school.name
+                    }));
+                    break;
+                case 'academic_year_id':
+                    options = props.options.academicYears.map(year => ({
+                        value: year.id,
+                        label: year.name
+                    }));
+                    break;
+            }
+        }
+
+        return {
+            type: 'text',
+            required: false,
+            placeholder: '',
+            ...field,
+            options: options || []
+        };
+    });
 });
 </script>
 
@@ -184,8 +218,7 @@ const normalizedFields = computed(() => {
                                 <select
                                     v-if="field.type === 'select'"
                                     :id="field.name"
-                                    :value="localForm[field.name]"
-                                    @change="updateFormValue(field.name, $event.target.value)"
+                                    v-model="localForm[field.name]"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                     :required="field.required"
                                     :disabled="submitting"
@@ -193,10 +226,10 @@ const normalizedFields = computed(() => {
                                     <option value="">Select {{ field.label }}</option>
                                     <option
                                         v-for="option in field.options"
-                                        :key="option.id || option.value"
-                                        :value="option.id || option.value"
+                                        :key="option.value"
+                                        :value="option.value"
                                     >
-                                        {{ option.name || option.label }}
+                                        {{ option.label }}
                                     </option>
                                 </select>
 
@@ -261,6 +294,10 @@ const normalizedFields = computed(() => {
         </div>
     </div>
 </template>
+
+
+
+
 
 
 

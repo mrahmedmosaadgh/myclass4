@@ -2,147 +2,217 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClassroomSubjectTeacher;
 use App\Models\Schedule;
+use App\Models\ScheduleCopy;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class ScheduleController extends Controller
 {
+
     public function index()
     {
-        $active_copy = \App\Models\ScheduleCopy::where('active', true)->get();
+        $active_copy = ScheduleCopy::where('active', true)->first();
 
-        if ($active_copy->count() !== 1) {
+        if (!$active_copy) {
             return Inertia::render('my_class/admin/Schedules/Index', [
                 'records' => [],
                 'options' => [],
-                'active_copy' => $active_copy,
-                'error' => $active_copy->count() === 0
-                    ? 'No active schedule copy found. Please activate one copy.'
-                    : 'Multiple active schedule copies found. Please ensure only one copy is active.'
+                'active_copy' => null,
+                'error' => 'No active schedule copy found. Please activate one copy.'
             ]);
         }
 
-        $records = Schedule::with(['copy', 'school', 'grade', 'classroom', 'subject', 'teacher'])
-            ->where('copy_id', $active_copy->first()->id)
-            ->orderBy('classroom_id')
-            ->orderBy('period_order')
-            ->paginate(40);
+        $records = Schedule::with([
+            'cst',
+            'cst.classroom',
+            'cst.subject',
+            'cst.teacher',
+        ])
+            ->where('copy_id', $active_copy->id)
+            // ->where('active', true)
+            ->orderBy('period_number')
+            ->get();
 
         $options = [
-            'schools' => \App\Models\School::select('id', 'name')->get(),
-            'grades' => \App\Models\Grade::select('id', 'name')->orderBy('name')->get(),
-            'classrooms' => \App\Models\Classroom::with('grade')
-                ->select('id', 'name', 'grade_id', 'school_id')
-                ->orderBy('name')
-                ->get(),
-            'subjects' => \App\Models\Subject::select('id', 'name')->get(),
-            'teachers' => \App\Models\Teacher::select('id', 'name')->get(),
-            'copies' => \App\Models\ScheduleCopy::select('id', 'name', 'active')->get(),
+            'csts' => ClassroomSubjectTeacher::with(['classroom', 'subject', 'teacher'])
+                ->get()
+                ->map(function ($cst) {
+                    return [
+                        'id' => $cst->id,
+                        'classroom' => [
+                            'id' => $cst->classroom->id,
+                            'name' => $cst->classroom->name,
+                            'grade' => $cst->classroom->grade
+                        ],
+                        'classroom_name' => $cst->classroom->name,
+                        'subject_name' => $cst->subject->name,
+                        'teacher_name' => $cst->teacher->name
+                    ];
+                })
         ];
 
         return Inertia::render('my_class/admin/Schedules/Index', [
             'records' => $records,
+            'records2' => $records,
             'options' => $options,
             'active_copy' => $active_copy
+        ]);
+    }
+    public function index2()
+    {
+        $schedules = Schedule::with(['cst.classroom', 'cst.subject', 'cst.teacher'])
+            ->get();
+
+
+        return response()->json([
+            'records' => $schedules,
+            'message' => 'Schedules retrieved successfully'
         ]);
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'copy_id' => 'required|exists:schedule_copies,id',
-            'school_id' => 'required|exists:schools,id',
-            'grade_id' => 'required|exists:grades,id',
-            'classroom_id' => 'required|exists:classrooms,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'teacher_id' => 'required|exists:teachers,id',
-            'day' => 'required|integer|min:1|max:7', // Made day required
-            'period_order' => 'required|integer|min:1', // Made period_order required
-            'place' => 'nullable|string|max:120',
-            'color_custom' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'active' => 'boolean',
-            'notes' => 'nullable|string'
-        ]);
+        try {
+            $validated = $request->validate([
+                'cst_id' => 'required|exists:classroom_subject_teachers,id',
+                'day' => 'required|integer|min:1|max:5',
+                'period_number' => 'required|integer|min:1|max:8',
+                'active' => 'boolean',
+                'notes' => 'nullable|string|max:1000',
+                'copy_id' => 'exists:schedule_copies,id'  // Optional in validation since we're setting it
+            ]);
 
-        // Check for existing schedule in the same time slot
-        $existingSchedule = Schedule::where([
-            'copy_id' => $validated['copy_id'],
-            'classroom_id' => $validated['classroom_id'],
-            'day' => $validated['day'],
-            'period_order' => $validated['period_order'],
-        ])->first();
+            $schedule = Schedule::create($validated);
+            $schedule->load(['cst.classroom', 'cst.subject', 'cst.teacher']);
 
-        if ($existingSchedule) {
             return response()->json([
-                'message' => 'A schedule already exists for this classroom at the specified day and period.',
-                'conflict' => $existingSchedule
-            ], 422);
-        }
-
-        // Check for teacher availability in the same time slot
-        $teacherConflict = Schedule::where([
-            'copy_id' => $validated['copy_id'],
-            'teacher_id' => $validated['teacher_id'],
-            'day' => $validated['day'],
-            'period_order' => $validated['period_order'],
-        ])->first();
-
-        if ($teacherConflict) {
+                'message' => 'Schedule created successfully',
+                'record' => $schedule
+            ], 201);
+        } catch (ValidationException $e) {
             return response()->json([
-                'message' => 'The selected teacher is already scheduled for this time slot.',
-                'conflict' => $teacherConflict
+                'message' => 'store Validation failed',
+                'errors' => $e->errors()
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create schedule',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 
-        $schedule = Schedule::create($validated);
-
+    public function show(Schedule $schedule)
+    {
         return response()->json([
-            'message' => 'Schedule created successfully',
-            'record' => $schedule->load(['school', 'grade', 'classroom', 'subject', 'teacher'])
+            'record' => $schedule->load(['cst.classroom', 'cst.subject', 'cst.teacher']),
+            'message' => 'Schedule retrieved successfully'
         ]);
     }
 
     public function update(Request $request, Schedule $schedule)
     {
-        $validated = $request->validate([
-            'copy_id' => 'required|exists:schedule_copies,id',
-            'school_id' => 'required|exists:schools,id',
-            'grade_id' => 'required|exists:grades,id',
-            'classroom_id' => 'required|exists:classrooms,id',
-            'subject_id' => 'required|exists:subjects,id',
-            'teacher_id' => 'required|exists:teachers,id',
-            'day' => 'nullable|integer|min:1|max:7',
-            // 'period' => 'nullable|integer|min:-2',
-            'period_order' => 'nullable|integer|min:1',
-            // 'name' => 'nullable|string|max:120',
-            'place' => 'nullable|string|max:120',
-            'color_custom' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'active' => 'boolean',
-            'notes' => 'nullable|string'
-        ]);
+        try {
+            $validated = $request->validate([
+                'cst_id' => 'required|exists:classroom_subject_teachers,id',
+                'day' => 'required|integer|min:1|max:5',
+                'period_number' => 'required|integer|min:1|max:8',
+                'active' => 'boolean',
+                'notes' => 'nullable|string|max:1000'
+            ]);
+            $active_copy = ScheduleCopy::where('active', true)->first();
 
-        $schedule->update($validated);
+            // Add copy_id from active copy
+            $validated['copy_id'] = $active_copy->id;
+            return $validated;
+            $schedule->update($validated);
 
-        return response()->json([
-            'message' => 'Schedule updated successfully',
-            'record' => $schedule
-        ]);
+            return response()->json([
+                'message' => 'Schedule updated successfully',
+                'record' => $schedule->fresh(['cst.classroom', 'cst.subject', 'cst.teacher'])
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'update Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update schedule',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
+    public function update2(Request $request, Schedule $schedule)
+    {
+        try {
+            $validated = $request->validate([
+                'id' => 'required|exists:schedules,id',
+                'cst_id' => 'required|exists:classroom_subject_teachers,id',
+                'day' => 'required|integer|min:1|max:5',
+                'period_number' => 'required|integer|min:1|max:8',
+                'active' => 'boolean',
+                'notes' => 'nullable|string|max:1000'
+            ]);
+            $active_copy = ScheduleCopy::where('active', true)->first();
 
+            // Add copy_id from active copy
+            $validated['copy_id'] = $active_copy->id;
+            return $validated;
+            $schedule->update($validated);
+
+            return response()->json([
+                'message' => 'Schedule updated successfully',
+                'record' => $schedule->fresh(['cst.classroom', 'cst.subject', 'cst.teacher'])
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'update Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to update schedule',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     public function destroy(Schedule $schedule)
     {
-        $schedule->delete();
+        try {
+            $schedule->delete();
 
-        return response()->json([
-            'message' => 'Schedule deleted successfully'
-        ]);
+            return response()->json([
+                'message' => 'Schedule deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete schedule',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Optional: Add a method to check for conflicts
+    private function checkForConflicts($data)
+    {
+        $existingSchedule = Schedule::where('day', $data['day'])
+            ->where('period_number', $data['period_number'])
+            ->whereHas('cst', function ($query) use ($data) {
+                $query->where('classroom_id', $data['classroom_id']);
+            })
+            ->first();
+
+        if ($existingSchedule) {
+            return [
+                'exists' => true,
+                'conflict' => $existingSchedule
+            ];
+        }
+
+        return ['exists' => false];
     }
 }
-
-
-
-
-
-

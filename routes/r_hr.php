@@ -8,6 +8,7 @@ use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\GradeSubjectController;
 use App\Http\Controllers\HRController;
+use App\Http\Controllers\PeriodDetailController;
 use App\Http\Controllers\ScheduleCopyController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SchoolController;
@@ -44,12 +45,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::resource('calendar', CalendarController::class);
     Route::resource('schedule-copies', ScheduleCopyController::class);
     Route::resource('schedules', ScheduleController::class);
+    Route::post('schedule/update2', [ScheduleController::class, 'update2'])->name('schedules.update2');
     Route::resource('curriculum', CurriculumController::class);
     // Route::resource('curriculum-detail', CurriculumDetailController::class);
     // Route::resource('curriculum-map', CurriculumMapController::class);
     // Route::resource('question-bank', QuestionBankController::class);
     // Classroom Routes
-
+    Route::resource('period-details', PeriodDetailController::class);
     // createSchedule
     Route::get('/schedule-copies/{id}/check-schedule-changes', [ScheduleCopyController::class, 'checkScheduleChanges']);
 Route::post('/schedule-copies/{id}/execute-schedule-changes', [ScheduleCopyController::class, 'executeScheduleChanges']);

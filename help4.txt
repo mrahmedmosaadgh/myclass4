@@ -171,6 +171,13 @@ database/migrations/2025_02_08_170004_create_messages_table.php
 php artisan migrate:refresh --path=/database/migrations/2024_11_29_145518_create_year_weeks_table.php
 php artisan migrate:refresh --path=/database/migrations/2024_11_29_145518_create_academic_year_weeks_table.php
 
+
+php artisan migrate:refresh --path=/database/migrations/2024_11_29_145522_create_schedules_table.php
+
+D:\my_projects\2025\laravel12\myclass4\database\migrations\2024_11_29_145522_create_schedules_table.php
+
+
+
 database/migrations/2024_11_29_145518_create_year_weeks_table.php
 2024_11_30_130328_create_curriculum_details_table
 database/migrations/2024_11_30_130314_create_curricula_table.php

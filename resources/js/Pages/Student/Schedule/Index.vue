@@ -1,6 +1,6 @@
 <template>
     <div class="bg-white p-6 rounded-lg shadow-lg">
-        <!-- Schedule Header -->
+        <!-- Schedule Header -->xxxxxxxxxxxxxxxxxxxxx
         <div class="mb-6">
             <h1 class="text-2xl font-bold text-gray-800">My Class Schedule</h1>
             <p class="text-gray-600">
@@ -14,7 +14,7 @@
                 <thead>
                     <tr>
                         <th class="p-3 bg-gray-50 border"></th>
-                        <th v-for="day in days" :key="day.value" 
+                        <th v-for="day in days" :key="day.value"
                             class="p-3 bg-gray-50 border text-gray-700 font-semibold">
                             {{ day.label }}
                         </th>
@@ -28,7 +28,7 @@
                                 {{ getPeriodTime(period) }}
                             </div>
                         </td>
-                        <td v-for="day in days" :key="`${period}-${day.value}`" 
+                        <td v-for="day in days" :key="`${period}-${day.value}`"
                             class="border p-2 h-24 w-40 relative">
                             <div v-if="getSchedule(day.value, period)"
                                  :class="getCardStyle(getSchedule(day.value, period))"
@@ -38,22 +38,22 @@
                                     <div class="font-semibold text-gray-800">
                                         {{ getSchedule(day.value, period).subject?.name }}
                                     </div>
-                                    
+
                                     <!-- Teacher Name -->
                                     <div class="text-sm text-gray-600 mt-1">
                                         <i class="fas fa-user-tie mr-1"></i>
                                         {{ getSchedule(day.value, period).teacher?.name }}
                                     </div>
-                                    
+
                                     <!-- Location -->
-                                    <div v-if="getSchedule(day.value, period).place" 
+                                    <div v-if="getSchedule(day.value, period).place"
                                          class="text-sm text-gray-500 mt-1">
                                         <i class="fas fa-location-dot mr-1"></i>
                                         {{ getSchedule(day.value, period).place }}
                                     </div>
 
                                     <!-- Additional Teachers -->
-                                    <div v-if="hasAdditionalTeachers(day.value, period)" 
+                                    <div v-if="hasAdditionalTeachers(day.value, period)"
                                          class="mt-auto text-xs text-gray-500">
                                         <div v-if="getSchedule(day.value, period).co_teacher">
                                             Co-Teacher: {{ getSchedule(day.value, period).co_teacher?.name }}
@@ -101,9 +101,9 @@ const days = [
 const periods = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const getSchedule = (day, period) => {
-    return props.schedules.find(s => 
-        s.day === day && 
-        s.period_order === period && 
+    return props.schedules.find(s =>
+        s.day === day &&
+        s.period_number === period &&
         s.active
     );
 };
@@ -148,3 +148,4 @@ const hasAdditionalTeachers = (day, period) => {
     transform: scale(1.02);
 }
 </style>
+

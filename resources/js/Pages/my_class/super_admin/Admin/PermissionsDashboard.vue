@@ -74,7 +74,7 @@
     </div>
 
     <!-- Role Modal -->
-    <DialogModal :show="roleModalOpen" @close="roleModalOpen = false">
+    <DialogModal_7 :show="roleModalOpen" @close="roleModalOpen = false">
       <template #title>
         {{ editingRole ? 'Edit Role' : 'Create Role' }}
       </template>
@@ -134,10 +134,10 @@
           {{ editingRole ? 'Update' : 'Create' }}
         </PrimaryButton>
       </template>
-    </DialogModal>
+    </DialogModal_7>
 
     <!-- Permission Modal -->
-    <DialogModal :show="permissionModalOpen" @close="permissionModalOpen = false">
+    <DialogModal_7 :show="permissionModalOpen" @close="permissionModalOpen = false">
       <template #title>
         {{ editingPermission ? 'Edit Permission' : 'Create Permission' }}
       </template>
@@ -173,10 +173,10 @@
           {{ editingPermission ? 'Update' : 'Create' }}
         </PrimaryButton>
       </template>
-    </DialogModal>
+    </DialogModal_7>
 
     <!-- User Roles Modal -->
-    <DialogModal :show="userRolesModalOpen" @close="userRolesModalOpen = false">
+    <DialogModal_7 :show="userRolesModalOpen" @close="userRolesModalOpen = false">
       <template #title>
         Manage Roles for {{ selectedUser ? selectedUser.name : '' }}
       </template>
@@ -216,10 +216,10 @@
           Save Roles
         </PrimaryButton>
       </template>
-    </DialogModal>
+    </DialogModal_7>
 
     <!-- User Modal -->
-    <DialogModal :show="userModalOpen" @close="closeUserModal">
+    <DialogModal_7 :show="userModalOpen" @close="closeUserModal">
       <template #title>
         {{ editingUser ? 'Edit User' : 'Create User' }}
       </template>
@@ -297,10 +297,10 @@
           {{ editingUser ? 'Update' : 'Create' }}
         </button>
       </template>
-    </DialogModal>
+    </DialogModal_7>
 
     <!-- Delete Confirmation Modal -->
-    <DialogModal :show="deleteModalOpen" @close="closeDeleteModal">
+    <DialogModal_7 :show="deleteModalOpen" @close="closeDeleteModal">
       <template #title>
         Delete User
       </template>
@@ -321,7 +321,7 @@
           Delete
         </button>
       </template>
-    </DialogModal>
+    </DialogModal_7>
   </AppLayout>
 </template>
 
@@ -329,7 +329,7 @@
 import { ref, computed } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
-import DialogModal from '@/Components/DialogModal.vue';
+import DialogModal_7 from './DialogModal_7.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { useForm } from '@inertiajs/vue3';

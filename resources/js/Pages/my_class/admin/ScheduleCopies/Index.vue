@@ -10,7 +10,15 @@ import NProgress from 'nprogress';
 
 const props = defineProps({
     records: Object,
-    options: Object
+    options: {
+        type: Object,
+        default: () => ({
+            schools: [],
+            academicYears: [],
+            semesters: [],
+            // ... other options
+        })
+    },
 });
 
 // Add local reactive state for table data
@@ -77,33 +85,32 @@ const formFields = [
         name: 'school_id',
         label: 'School',
         type: 'select',
-        options: props.options.schools,
-        required: true
-    },
-    {
-        name: 'name',
-        label: 'Name',
-        type: 'text',
-        maxLength: 50,
-        required: true
-    },
-    {
-        name: 'description',
-        label: 'Description',
-        type: 'textarea'
+        required: true,
+        options: props.options.schools
     },
     {
         name: 'academic_year_id',
         label: 'Academic Year',
         type: 'select',
-        options: props.options.academicYears,
-        required: true
+        required: true,
+        options: props.options.academicYears
     },
     {
         name: 'semester_id',
         label: 'Semester',
         type: 'select',
         options: props.options.semesters
+    },
+    {
+        name: 'name',
+        label: 'Name',
+        type: 'text',
+        required: true
+    },
+    {
+        name: 'description',
+        label: 'Description',
+        type: 'textarea'
     },
     {
         name: 'week_number',
@@ -121,8 +128,12 @@ const formFields = [
         name: 'status',
         label: 'Status',
         type: 'select',
-        options: props.options.statuses,
-        required: true
+        required: true,
+        options: [
+            { value: 'draft', label: 'Draft' },
+            { value: 'active', label: 'Active' },
+            { value: 'archived', label: 'Archived' }
+        ]
     },
     {
         name: 'active',
@@ -265,7 +276,7 @@ const refreshData = () => {
 };
 </script>
 
-<template>
+<template>props{{ props }}
     <AppLayout title="Schedule Copies">
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -296,6 +307,7 @@ const refreshData = () => {
                         :form="form"
                         :errors="formErrors"
                         :loading="isSubmitting"
+                        :options="props.options"
                         @close="closeModal"
                         @submit="handleSubmit"
                     />
@@ -304,6 +316,14 @@ const refreshData = () => {
         </div>
     </AppLayout>
 </template>
+
+
+
+
+
+
+
+
 
 
 
